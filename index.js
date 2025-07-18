@@ -2,7 +2,7 @@ const mysql = require("mysql2/promise");
 
 // ❗️ القيم مأخوذة من صفحة المتغيرات في Railway
 const config = {
-  host: "mysql.proxy.rlwy.net",
+  host: "mysql.railway.internal",
   port: 23945,
   user: "root",
   password: "piOsVWzPpFmzRWMHSGdAMiUwcSCQBoYA",
