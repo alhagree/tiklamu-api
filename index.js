@@ -17,7 +17,7 @@ app.get("/", (req, res) => {
   res.send("✅ Backend is working!");
 });
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 8080;
 
 process.on("uncaughtException", (err) => {
   console.error("❌ Uncaught Exception:", err);
