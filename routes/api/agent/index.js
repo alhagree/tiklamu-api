@@ -9,4 +9,4 @@ router.use("/dashboard", require("./dashboard"));
 router.use("/settings", require("./settings"));
 
 
-module.exports = router;
+module.exports = router; 

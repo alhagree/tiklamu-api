@@ -39,4 +39,4 @@ router.put("/:id", verifyToken, getUploadMiddleware(), controller.updateItem);
 // ✅ حذف صنف
 router.delete("/:id", verifyToken, controller.deleteItem);
 
-module.exports = router;
+module.exports = router; 

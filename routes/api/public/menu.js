@@ -62,6 +62,6 @@ router.get("/:link_code", async (req, res) => {
     console.error("⚠️ خطأ في جلب المنيو:", err);
     res.status(500).json({ message: "حدث خطأ في السيرفر" });
   }
-});
+}); 
 
 module.exports = router;

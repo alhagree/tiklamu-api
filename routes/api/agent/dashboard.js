@@ -6,4 +6,4 @@ const verifyToken = require("../../../middleware/verifyToken");
 
 router.get("/", verifyToken, DashboardController.getDashboardData); // ✅ نمرر فقط الدالة المطلوبة
 
-module.exports = router; // ✅ تصدير راوتر جاهز
+module.exports = router; // ✅ تصدير راوتر جاهز 

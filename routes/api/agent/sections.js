@@ -6,7 +6,7 @@ const multer = require("multer");
 const verifyToken = require("../../../middleware/verifyToken");
 const sectionController = require("../../../controllers/agent/sectionController");
 
-// إعداد upload ديناميكي حسب link_code
+// إعداد upload ديناميكي حسب link_code 
 function getUploadMiddleware() {
   const storage = multer.diskStorage({
     destination: (req, file, cb) => {

@@ -28,7 +28,7 @@ function getUploadMiddleware() {
 }
 
 // ✅ عرض تفاصيل الاشتراك (اسم العميل، رقم الهاتف، المدة...)
-router.get("/subscription", verifyToken, controller.getSubscriptionDetails);
+router.get("/subscription", verifyToken, controller.getSubscriptionDetails); 
 
 // routes/api/agent/clients.js أو مشابه
 router.put('/me', verifyToken, controller.updateClientInfo);
