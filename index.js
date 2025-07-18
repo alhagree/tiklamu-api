@@ -1,25 +1,21 @@
 const mysql = require("mysql2/promise");
+require("dotenv").config(); // لتحميل متغيرات .env في بيئة التطوير
 
-// ❗️ القيم مأخوذة من صفحة المتغيرات في Railway
-const config = {
-  host: "mysql.railway.internal",
-  port: 3306,
-  user: "root",
-  password: "piOsVWzPpFmzRWMHSGdAMiUwcSCQBoYA",
-  database: "railway"
-};
-
-// ✅ طباعة القيم للتأكيد
-console.log("🔧 Using manual DB config:");
-console.log("🌐 HOST:", config.host);
-console.log("🔢 PORT:", config.port);
-console.log("👤 USER:", config.user);
-console.log("🔐 PASSWORD:", config.password ? "(hidden)" : "(not set)");
-console.log("📂 DATABASE:", config.database);
+// ✅ طباعة المتغيرات لاختبار الاتصال
+console.log("🔍 Trying to connect with the following DB config:");
+console.log("🌐 HOST:", process.env.MYSQLHOST);
+console.log("🔢 PORT:", process.env.MYSQLPORT);
+console.log("👤 USER:", process.env.MYSQLUSER);
+console.log("🔐 PASSWORD:", process.env.MYSQLPASSWORD ? "(hidden)" : "(not set)");
+console.log("📂 DATABASE:", process.env.MYSQL_DATABASE);
 
 // ✅ إنشاء الاتصال
 const pool = mysql.createPool({
-  ...config,
+  host: process.env.MYSQLHOST,
+  port: process.env.MYSQLPORT || 3306,
+  user: process.env.MYSQLUSER,
+  password: process.env.MYSQLPASSWORD,
+  database: process.env.MYSQLDATABASE,
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
