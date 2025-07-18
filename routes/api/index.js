@@ -4,6 +4,7 @@ const router = express.Router();
 
 // ✅ اختبار الاتصال
 router.get("/test", (req, res) => {
+  res.setHeader("Content-Type", "application/json");
   res.json({ success: true, message: "API is working 🎉" });
 });
 
