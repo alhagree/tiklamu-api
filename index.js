@@ -1,24 +1,38 @@
-const mysql = require("mysql2/promise");
-require("dotenv").config(); // لتحميل متغيرات .env في بيئة التطوير
+//backend\index.js
+const express = require("express");
+const cors = require("cors");
+const app = express();
 
-// ✅ طباعة المتغيرات لاختبار الاتصال
-console.log("🔍 Trying to connect with the following DB config:");
-console.log("🌐 HOST:", process.env.MYSQLHOST);
-console.log("🔢 PORT:", process.env.MYSQLPORT);
-console.log("👤 USER:", process.env.MYSQLUSER);
-console.log("🔐 PASSWORD:", process.env.MYSQLPASSWORD ? "(hidden)" : "(not set)");
-console.log("📂 DATABASE:", process.env.MYSQL_DATABASE);
+app.use(cors());
+app.use(express.json());
 
-// ✅ إنشاء الاتصال
-const pool = mysql.createPool({
-  host: process.env.MYSQLHOST,
-  port: process.env.MYSQLPORT || 3306,
-  user: process.env.MYSQLUSER,
-  password: process.env.MYSQLPASSWORD,
-  database: process.env.MYSQLDATABASE,
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
+const path = require("path");
+
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
+// ✅ كل شيء يمر عبر الراوتر المركزي
+app.use("/api", require("./routes/api"));
+
+app.get("/", (req, res) => {
+  res.send("✅ Backend is working!");
 });
 
-module.exports = pool;
+const PORT = process.env.PORT || 3000;
+
+process.on("uncaughtException", (err) => {
+  console.error("❌ Uncaught Exception:", err);
+});
+
+
+app.listen(PORT, () => {
+  console.log(`✅ Server running on port ${PORT}`);
+});
+
+console.log("⏳ Starting app...");
+console.log("📦 PORT:", process.env.PORT);
+
+const pool = require("./shared/db");
+
+pool.query("SELECT 1")
+  .then(() => console.log("✅ Connected to DB"))
+  .catch((err) => console.error("❌ DB Connection Failed:", err));
