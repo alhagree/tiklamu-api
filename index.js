@@ -17,22 +17,6 @@ app.get("/", (req, res) => {
   res.send("✅ Backend is working!");
 });
 
-const PORT = process.env.PORT || 8080;
-
-process.on("uncaughtException", (err) => {
-  console.error("❌ Uncaught Exception:", err);
+app.listen(3000, () => {
+  console.log("✅ Server running on http://localhost:3000");
 });
-
-
-app.listen(PORT, () => {
-  console.log(`✅ Server running on port ${PORT}`);
-});
-
-console.log("⏳ Starting app...");
-console.log("📦 PORT:", process.env.PORT);
-
-const pool = require("./shared/db");
-
-pool.query("SELECT 1")
-  .then(() => console.log("✅ Connected to DB"))
-  .catch((err) => console.error("❌ DB Connection Failed:", err));
