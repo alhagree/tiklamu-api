@@ -1,12 +1,12 @@
-//backend\shared\db.js
 const mysql = require("mysql2/promise");
+require("dotenv").config(); // لتحميل بيانات env
 
-// يمكنك تغيير الإعدادات حسب قاعدة بياناتك
 const pool = mysql.createPool({
-  host: "localhost",
-  user: "root",
-  password: "Medo@1990",      // أو كلمة المرور إن وجدت
-  database: "menu_db",
+  host: process.env.DB_HOST,
+  port: process.env.DB_PORT || 3306,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASS,
+  database: process.env.DB_NAME,
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
