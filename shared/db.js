@@ -1,3 +1,4 @@
+//backend\shared\db.js
 const mysql = require("mysql2/promise");
 
 // يمكنك تغيير الإعدادات حسب قاعدة بياناتك
