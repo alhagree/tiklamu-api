@@ -4,7 +4,7 @@ const router = express.Router();
 
 // ✅ اختبار الاتصال
 router.get("/test", (req, res) => {
-  res.json({ success: true, message: "API is working 🎉" });
+  res.status(200).json({ success: true, message: "API is working 🎉" });
 });
 
 router.use("/admin", require("./admin"));
