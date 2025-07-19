@@ -5,11 +5,23 @@
   "dependencies": {
     "axios": "^1.10.0",
     "bcrypt": "^6.0.0",
+    "cloudinary": "^1.41.3",
     "cors": "^2.8.5",
     "dotenv": "^17.2.0",
     "express": "^5.1.0",
+    "form-data": "^4.0.4",
+    "fs": "^0.0.1-security",
     "jsonwebtoken": "^9.0.2",
     "multer": "^2.0.1",
-    "mysql2": "^3.14.1"
-  }
+    "multer-storage-cloudinary": "^4.0.0",
+    "mysql2": "^3.14.1",
+    "path": "^0.12.7"
+  },
+  "name": "backend",
+  "version": "1.0.0",
+  "main": "index.js",
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": ""
 }

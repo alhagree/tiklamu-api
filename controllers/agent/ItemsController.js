@@ -1,6 +1,7 @@
-// route Item
+// backend/controllers/agent/ItemsController.js
 const db = require("../../shared/db");
 const path = require("path");
+const imagekit = require("../../utils/imagekit"); // ✅ استخدام ImageKit
 
 // ✅ إنشاء صنف
 exports.createItem = async (req, res) => {
@@ -13,7 +14,16 @@ exports.createItem = async (req, res) => {
       it_is_active,
     } = req.body;
 
-    const image = req.file ? req.file.filename : null;
+    let imageUrl = null;
+
+    if (req.file) {
+      const uploadedImage = await imagekit.upload({
+        file: req.file.buffer,
+        fileName: `${Date.now()}-${req.file.originalname}`,
+        folder: `/items/${req.user.link_code}`,
+      });
+      imageUrl = uploadedImage.url;
+    }
 
     const sql = `
       INSERT INTO items (it_name, it_price, it_description, it_se_id, it_is_active, it_image)
@@ -25,7 +35,7 @@ exports.createItem = async (req, res) => {
       it_description || "",
       parseInt(it_se_id),
       it_is_active == "1" ? 1 : 0,
-      image,
+      imageUrl,
     ];
 
     const [result] = await db.query(sql, params);
@@ -53,13 +63,11 @@ exports.getAllItems = async (req, res) => {
     const [rows] = await db.query(sql, [client_id]);
 
     const items = rows.map((row) => ({
-  ...row,
-  link_code,
-}));
+      ...row,
+      link_code,
+    }));
 
-
-    res.json(items);    
-
+    res.json(items);
   } catch (err) {
     console.error("DB Error:", err.message);
     res.status(500).json({ error: "فشل في جلب الأصناف" });
@@ -70,7 +78,7 @@ exports.getAllItems = async (req, res) => {
 exports.getOneItem = async (req, res) => {
   try {
     const id = req.params.id;
-    const link_code = req.user?.link_code; // ✅ جلب من التوكن
+    const link_code = req.user?.link_code;
 
     const sql = `
       SELECT it.*, ms.se_name
@@ -86,9 +94,7 @@ exports.getOneItem = async (req, res) => {
       return res.status(404).json({ error: "الصنف غير موجود" });
     }
 
-    // ✅ تمرير link_code للواجهة
     row.link_code = link_code;
-
     res.json(row);
   } catch (err) {
     console.error("DB Error:", err.message);
@@ -108,7 +114,16 @@ exports.updateItem = async (req, res) => {
       it_is_active,
     } = req.body;
 
-    const image = req.file ? req.file.filename : null;
+    let imageUrl = null;
+
+    if (req.file) {
+      const uploadedImage = await imagekit.upload({
+        file: req.file.buffer,
+        fileName: `${Date.now()}-${req.file.originalname}`,
+        folder: `/items/${req.user.link_code}`,
+      });
+      imageUrl = uploadedImage.url;
+    }
 
     let sql = `
       UPDATE items SET
@@ -126,9 +141,9 @@ exports.updateItem = async (req, res) => {
       it_is_active == "1" ? 1 : 0,
     ];
 
-    if (image) {
+    if (imageUrl) {
       sql += `, it_image = ?`;
-      params.push(image);
+      params.push(imageUrl);
     }
 
     sql += ` WHERE it_id = ?`;
