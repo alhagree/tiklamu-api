@@ -16,7 +16,6 @@ router.get("/", verifyToken, controller.getSettings);
 
 router.get("/subscription", verifyToken, controller.getFullSettingsWithSubscription);
 
-
 // ✅ تعديل الإعدادات
 router.put("/", verifyToken, upload, controller.updateSettings);
 
