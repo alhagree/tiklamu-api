@@ -7,7 +7,8 @@ const path = require("path");
 // ✅ السماح لواجهتي العميل والزبون
 const allowedOrigins = [
   "https://menu-agent.vercel.app",
-  "https://menu-client-puce.vercel.app"
+  "https://menu-client-puce.vercel.app",
+  "https://menu-admin-nu.vercel.app"
 ];
 
 app.use(
