@@ -38,7 +38,7 @@ exports.add = async (req, res) => {
     const cl_password = "default123"; // كلمة مرور مؤقتة
     const cl_created_at = new Date(); // التاريخ الحالي
     const cl_is_active = 1; // نشط افتراضياً
-    const cl_status = "active"; // أو "active" حسب النظام
+    const cl_status = 1; // أو "active" حسب النظام
 
     const [result] = await db.query(
       `INSERT INTO clients 
