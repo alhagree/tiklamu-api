@@ -1,44 +1,39 @@
 const express = require("express");
 const cors = require("cors");
+const app = express();
 const path = require("path");
 
-const app = express();
+// إعداد CORS للسماح بطلبات من الواجهة فقط
+const allowedOrigins = ["https://menu-agent.vercel.app"];
 
-// 🔒 قائمة الدومينات المسموح بها (Vercel + Localhost للتطوير)
-const allowedOrigins = [
-  "https://menu-agent.vercel.app", // ← واجهة العميل المستضافة على Vercel
-  "http://localhost:5173"          // ← لتجربة محلية إن وجدت
-];
-
-// ⚙️ إعداد CORS بتحديد origin والسماح بإرسال الكوكيز/التوكن
 app.use(
   cors({
     origin: function (origin, callback) {
+      // السماح بطلبات Postman أو الطلبات بدون Origin
       if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error("❌ Not allowed by CORS"));
+        return callback(null, true);
       }
+      return callback(new Error("Not allowed by CORS"));
     },
-    credentials: true,
+    credentials: true, // ← إن كنت ترسل كوكيز أو Authorization
   })
 );
 
-// 🧠 دعم JSON في الطلبات
+// Body Parser
 app.use(express.json());
 
-// 🖼️ توفير الوصول للصور
+// الصور الثابتة
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
-// 📦 الراوتر المركزي
+// الراوتر الأساسي
 app.use("/api", require("./routes/api"));
 
-// 🧪 اختبار مباشر
+// اختبار مباشر
 app.get("/", (req, res) => {
   res.send("✅ Backend is working!");
 });
 
-// 🚀 تشغيل السيرفر
+// التشغيل
 app.listen(3000, () => {
   console.log("✅ Server running on http://localhost:3000");
 });
