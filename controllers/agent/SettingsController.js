@@ -72,62 +72,64 @@ exports.getSettings = async (req, res) => {
 
 // ✅ تحديث الإعدادات
 exports.updateSettings = async (req, res) => {
+  const clientId = req.user.id;
+  const link_code = req.user.link_code;
+
   try {
-    const clientId = req.user.id;
-    const link_code = req.user?.link_code; // ✅ نفس الأسلوب المستخدم في ItemsController
-    const { name, phone } = req.body;
+    const { cl_name, cl_phone } = req.body;
 
-    let logo = null;
-    let background = null;
-
-    // تحقق من وجود إعدادات مسبقة
-    const [existingRows] = await db.query(
-      "SELECT * FROM settings WHERE st_cl_id = ? LIMIT 1",
-      [clientId]
-    );
-
-    const existing = existingRows[0];
+    let logoUrl = null;
+    let backgroundUrl = null;
 
     if (req.files?.logo?.[0]) {
-      const logoUpload = await imagekit.upload({
+      const uploadedLogo = await imagekit.upload({
         file: req.files.logo[0].buffer,
-        fileName: Date.now() + path.extname(req.files.logo[0].originalname),
-        folder: `/menu_project/settings/${link_code}`, // ✅ استخدام link_code من التوكن
+        fileName: `${Date.now()}-${req.files.logo[0].originalname}`,
+        folder: `/menu_project/settings/${link_code}`,
       });
-      logo = logoUpload.url;
-    } else {
-      logo = existing?.st_logo || null;
+      logoUrl = uploadedLogo.url;
     }
 
     if (req.files?.background?.[0]) {
-      const bgUpload = await imagekit.upload({
+      const uploadedBackground = await imagekit.upload({
         file: req.files.background[0].buffer,
-        fileName: Date.now() + path.extname(req.files.background[0].originalname),
+        fileName: `${Date.now()}-${req.files.background[0].originalname}`,
         folder: `/menu_project/settings/${link_code}`,
       });
-      background = bgUpload.url;
-    } else {
-      background = existing?.st_background || null;
+      backgroundUrl = uploadedBackground.url;
     }
 
-    if (existing) {
-      await db.query(
-        `UPDATE settings 
-         SET st_name = ?, st_phone = ?, st_logo = ?, st_background = ?
-         WHERE st_cl_id = ?`,
-        [name, phone, logo, background, clientId]
-      );
-    } else {
-      await db.query(
-        `INSERT INTO settings (st_name, st_phone, st_logo, st_background, st_cl_id)
-         VALUES (?, ?, ?, ?, ?)`,
-        [name, phone, logo, background, clientId]
-      );
+    // تحديث جدول clients
+    const updateClientSql = `
+      UPDATE clients
+      SET cl_name = ?, cl_phone = ?
+      WHERE cl_id = ?
+    `;
+    await db.query(updateClientSql, [cl_name, cl_phone, clientId]);
+
+    // تحديث جدول settings
+    let updateSettingsSql = `UPDATE settings SET `;
+    const settingsParams = [];
+    if (logoUrl) {
+      updateSettingsSql += `st_logo = ?, `;
+      settingsParams.push(logoUrl);
+    }
+    if (backgroundUrl) {
+      updateSettingsSql += `st_background = ?, `;
+      settingsParams.push(backgroundUrl);
     }
 
-    res.json({ success: true, message: "تم تحديث الإعدادات بنجاح" });
+    // فقط إذا وُجدت صور نُحدث جدول الإعدادات
+    if (settingsParams.length > 0) {
+      updateSettingsSql = updateSettingsSql.slice(0, -2); // إزالة الفاصلة الأخيرة
+      updateSettingsSql += ` WHERE st_cl_id = ?`;
+      settingsParams.push(clientId);
+      await db.query(updateSettingsSql, settingsParams);
+    }
+
+    res.json({ success: true });
   } catch (err) {
-    console.error("Update Settings Error:", err);
-    res.status(500).json({ error: "فشل في تحديث الإعدادات" });
+    console.error("Update Settings Error:", err.message);
+    res.status(500).json({ error: "فشل في تحديث البيانات" });
   }
 };
