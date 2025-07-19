@@ -74,8 +74,8 @@ exports.getSettings = async (req, res) => {
 exports.updateSettings = async (req, res) => {
   try {
     const clientId = req.user.id;
+    const link_code = req.user?.link_code; // ✅ نفس الأسلوب المستخدم في ItemsController
     const { name, phone } = req.body;
-    const link_code = req.user?.link_code;
 
     let logo = null;
     let background = null;
@@ -92,7 +92,7 @@ exports.updateSettings = async (req, res) => {
       const logoUpload = await imagekit.upload({
         file: req.files.logo[0].buffer,
         fileName: Date.now() + path.extname(req.files.logo[0].originalname),
-        folder: `/menu_project/settings/${link_code}`
+        folder: `/menu_project/settings/${link_code}`, // ✅ استخدام link_code من التوكن
       });
       logo = logoUpload.url;
     } else {
@@ -103,7 +103,7 @@ exports.updateSettings = async (req, res) => {
       const bgUpload = await imagekit.upload({
         file: req.files.background[0].buffer,
         fileName: Date.now() + path.extname(req.files.background[0].originalname),
-        folder: `/menu_project/settings/${link_code}`
+        folder: `/menu_project/settings/${link_code}`,
       });
       background = bgUpload.url;
     } else {
@@ -111,7 +111,6 @@ exports.updateSettings = async (req, res) => {
     }
 
     if (existing) {
-      // تحديث الإعدادات
       await db.query(
         `UPDATE settings 
          SET st_name = ?, st_phone = ?, st_logo = ?, st_background = ?
@@ -119,7 +118,6 @@ exports.updateSettings = async (req, res) => {
         [name, phone, logo, background, clientId]
       );
     } else {
-      // إنشاء جديد
       await db.query(
         `INSERT INTO settings (st_name, st_phone, st_logo, st_background, st_cl_id)
          VALUES (?, ?, ?, ?, ?)`,
