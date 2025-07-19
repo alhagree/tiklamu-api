@@ -84,7 +84,7 @@ exports.getSectionById = async (req, res) => {
 // ✅ تعديل قسم
 exports.updateSection = async (req, res) => {
   const { id } = req.params;
-  const { name, description, is_active, image } = req.body;
+  const { name, description, is_active } = req.body;
   const active = parseInt(is_active) === 1 ? 1 : 0;
 
   try {
@@ -93,14 +93,22 @@ exports.updateSection = async (req, res) => {
       return res.status(404).json({ error: "القسم غير موجود" });
     }
 
-    // استخدم الصورة الجديدة إذا أُرسلت، أو احتفظ بالصورة القديمة
-    const imageName = image || rows[0].se_image;
+    let imageUrl = rows[0].se_image;
+
+    if (req.file) {
+      const uploadResult = await imagekit.upload({
+        file: req.file.buffer,
+        fileName: Date.now() + path.extname(req.file.originalname),
+        folder: `/menu_project/sections/${req.user?.link_code}`,
+      });
+      imageUrl = uploadResult.url;
+    }
 
     await db.query(
       `UPDATE sections 
        SET se_name = ?, se_description = ?, se_image = ?, se_is_active = ?
        WHERE se_id = ?`,
-      [name, description, imageName, active, id]
+      [name, description, imageUrl, active, id]
     );
 
     res.json({ message: "تم تحديث القسم بنجاح" });
