@@ -1,21 +1,24 @@
+//backend\index.js
 const express = require("express");
 const cors = require("cors");
 const app = express();
 const path = require("path");
 
-// إعداد CORS للسماح بطلبات من الواجهة فقط
-const allowedOrigins = ["https://menu-agent.vercel.app"];
+// ✅ السماح لواجهتي العميل والزبون
+const allowedOrigins = [
+  "https://menu-agent.vercel.app",
+  "https://menu-client-puce.vercel.app"
+];
 
 app.use(
   cors({
     origin: function (origin, callback) {
-      // السماح بطلبات Postman أو الطلبات بدون Origin
       if (!origin || allowedOrigins.includes(origin)) {
         return callback(null, true);
       }
       return callback(new Error("Not allowed by CORS"));
     },
-    credentials: true, // ← إن كنت ترسل كوكيز أو Authorization
+    credentials: true,
   })
 );
 
