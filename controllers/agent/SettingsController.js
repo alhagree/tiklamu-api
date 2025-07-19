@@ -1,6 +1,53 @@
+//backend\controllers\agent\SettingsController.js
 const db = require("../../shared/db");
 const imagekit = require("../../utils/imagekit");
 const path = require("path");
+
+exports.getFullSettingsWithSubscription = async (req, res) => {
+  const clientId = req.user.id;
+
+  try {
+    // الإعدادات
+    const [settingsRows] = await db.query(
+      `SELECT * FROM settings WHERE st_cl_id = ? LIMIT 1`,
+      [clientId]
+    );
+    const settings = settingsRows[0] || {};
+
+    // معلومات العميل
+    const [clientRows] = await db.query(
+      `SELECT cl_name, cl_phone FROM clients WHERE cl_id = ?`,
+      [clientId]
+    );
+    const client = clientRows[0] || {};
+
+    // الاشتراك الأحدث
+    const [subRows] = await db.query(
+      `SELECT * FROM subscriptions WHERE su_client_id = ? ORDER BY su_end_date DESC LIMIT 1`,
+      [clientId]
+    );
+    const subscription = subRows[0] || {};
+
+    // حساب المدة المتبقية
+    let days_remaining = null;
+    if (subscription.su_end_date) {
+      const end = new Date(subscription.su_end_date);
+      const today = new Date();
+      days_remaining = Math.ceil((end - today) / (1000 * 60 * 60 * 24));
+    }
+
+    res.json({
+      ...settings,
+      ...client,
+      ...subscription,
+      days_remaining,
+    });
+  } catch (err) {
+    console.error("Full Settings Error:", err);
+    res.status(500).json({ error: "خطأ أثناء جلب البيانات" });
+  }
+};
+
 
 // ✅ جلب الإعدادات
 exports.getSettings = async (req, res) => {

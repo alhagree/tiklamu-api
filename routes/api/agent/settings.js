@@ -1,3 +1,4 @@
+//backend\routes\api\agent\settings.js
 const express = require("express");
 const router = express.Router();
 const verifyToken = require("../../../middleware/verifyToken");
@@ -12,6 +13,9 @@ const upload = multer({ storage: multer.memoryStorage() }).fields([
 
 // ✅ جلب الإعدادات
 router.get("/", verifyToken, controller.getSettings);
+
+router.get("/subscription", verifyToken, controller.getFullSettingsWithSubscription);
+
 
 // ✅ تعديل الإعدادات
 router.put("/", verifyToken, upload, controller.updateSettings);
