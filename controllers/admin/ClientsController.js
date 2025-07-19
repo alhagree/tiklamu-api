@@ -38,12 +38,13 @@ exports.add = async (req, res) => {
     const cl_password = "default123"; // كلمة مرور مؤقتة
     const cl_created_at = new Date(); // التاريخ الحالي
     const cl_is_active = 1; // نشط افتراضياً
+    const cl_status = "active"; // أو "active" حسب النظام
 
     const [result] = await db.query(
       `INSERT INTO clients 
-       (cl_name, cl_phone, cl_email, cl_password, cl_created_at, cl_is_active) 
-       VALUES (?, ?, ?, ?, ?, ?)`,
-      [cl_name, cl_phone, cl_email, cl_password, cl_created_at, cl_is_active]
+      (cl_name, cl_phone, cl_email, cl_password, cl_created_at, cl_is_active, cl_status) 
+      VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [cl_name, cl_phone, cl_email, cl_password, cl_created_at, cl_is_active, cl_status]
     );
 
     res.json({ message: "✅ تمت الإضافة بنجاح", id: result.insertId });
