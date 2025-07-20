@@ -141,6 +141,7 @@ exports.updateItem = async (req, res) => {
       it_description || "",
       parseInt(it_se_id),
       it_is_active == "1" ? 1 : 0,
+      it_available == "1" ? 1 : 0,
     ];
 
     if (imageUrl) {
