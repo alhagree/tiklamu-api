@@ -53,7 +53,7 @@ router.get("/:link_code", async (req, res) => {
     // 4. تجهيز الاستجابة
     res.json({
       client_name: client.client_name,
-      logo_url: client.logo ? `/uploads/settings/${linkCode}/${client.logo}` : null,
+      logo_url: client.logo,
       sections,
       items,
     });
