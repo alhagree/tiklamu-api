@@ -99,7 +99,7 @@ exports.add = async (req, res) => {
         const uploadResponse = await imagekit.upload({
           file: imagePath,
           fileName: imageName,
-          folder: `/menu_project/${linkCode}/settings`,
+          folder: `/menu_project/settings/${linkCode}`,
           overwriteFile: true
         });
 
