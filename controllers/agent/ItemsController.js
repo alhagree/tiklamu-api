@@ -132,7 +132,7 @@ exports.updateItem = async (req, res) => {
         it_price = ?,
         it_description = ?,
         it_se_id = ?,
-        it_is_active = ?
+        it_is_active = ?,
         it_available = ?
     `;
     const params = [
