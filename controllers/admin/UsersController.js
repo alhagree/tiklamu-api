@@ -5,7 +5,7 @@ exports.getByClientId = async (req, res) => {
 
   try {
     const [results] = await db.query(
-      'SELECT us_username, us_link_code FROM us_users WHERE us_client_id = ?',
+      'SELECT us_username, us_password, us_link_code FROM us_users WHERE us_client_id = ?',
       [clientId]
     );
 

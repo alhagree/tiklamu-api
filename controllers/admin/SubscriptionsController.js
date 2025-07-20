@@ -38,7 +38,14 @@ exports.getById = async (req, res) => {
 };
 
 exports.add = async (req, res) => {
-  const { su_client_id, su_start_date, su_end_date, su_status, su_type, su_duration } = req.body;
+  const {
+    su_client_id,
+    su_start_date,
+    su_end_date,
+    su_status,
+    su_type,
+    su_duration
+  } = req.body;
 
   if (!su_client_id || !su_start_date || !su_end_date)
     return res.status(400).json({ message: "❌ بيانات ناقصة" });
@@ -69,7 +76,10 @@ exports.add = async (req, res) => {
     let linkCode = null;
 
     if (actualType === 'first' || actualType === 'trial') {
-      const [existingUsers] = await db.query('SELECT * FROM us_users WHERE us_client_id = ?', [su_client_id]);
+      const [existingUsers] = await db.query(
+        'SELECT * FROM us_users WHERE us_client_id = ?',
+        [su_client_id]
+      );
 
       if (existingUsers.length === 0) {
         const username = "user_" + su_client_id;
@@ -81,42 +91,36 @@ exports.add = async (req, res) => {
           [su_client_id, username, password, linkCode]
         );
 
-        // توليد باركود
-        const imageName = `barcode_${linkCode}.png`;
-        const tmpDir = path.join(__dirname, "../../../tmp");
-        if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir);
-
-        const imagePath = path.join(tmpDir, imageName);
+        // توليد الباركود كـ Buffer
         const clientUrl = `https://menu.tiklamu.com/?link_code=${linkCode}`;
-
-        await QRCode.toFile(imagePath, clientUrl, {
+        const qrBuffer = await QRCode.toBuffer(clientUrl, {
           width: 300,
           margin: 2,
           color: { dark: "#000", light: "#fff" }
         });
 
         // رفع الباركود إلى ImageKit
+        const imageName = `barcode_${linkCode}.png`;
         const uploadResponse = await imagekit.upload({
-          file: imagePath,
+          file: qrBuffer,
           fileName: imageName,
           folder: `/menu_project/settings/${linkCode}`,
           overwriteFile: true
         });
 
-        // حفظ رابط الباركود
+        // حفظ رابط الباركود في settings
         await db.query(`
           INSERT INTO settings (st_cl_id, st_barcode) 
           VALUES (?, ?) 
           ON DUPLICATE KEY UPDATE st_barcode = ?
         `, [su_client_id, uploadResponse.url, uploadResponse.url]);
-
-        // حذف الملف المحلي
-        fs.unlinkSync(imagePath);
       }
     }
 
     const [insertResult] = await db.query(
-      'INSERT INTO subscriptions (su_client_id, su_start_date, su_end_date, su_status, su_type, su_duration) VALUES (?, ?, ?, ?, ?, ?)',
+      `INSERT INTO subscriptions 
+        (su_client_id, su_start_date, su_end_date, su_status, su_type, su_duration)
+        VALUES (?, ?, ?, ?, ?, ?)`,
       [
         su_client_id,
         su_start_date,
@@ -129,6 +133,7 @@ exports.add = async (req, res) => {
 
     res.json({ message: "✅ تمت الإضافة", id: insertResult.insertId });
   } catch (err) {
+    console.error("❌ Error in add subscription:", err);
     res.status(500).json({ error: err });
   }
 };
