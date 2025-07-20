@@ -1,7 +1,10 @@
 const crypto = require("crypto");
 const db = require("../../shared/db");
+const QRCode = require("qrcode");
+const imagekit = require("../../shared/imagekit");
+const path = require("path");
+const fs = require("fs");
 
-// جلب كل الاشتراكات
 exports.getAll = async (req, res) => {
   try {
     const [results] = await db.query(`
@@ -15,13 +18,13 @@ exports.getAll = async (req, res) => {
   }
 };
 
-// جلب اشتراك واحد
 exports.getById = async (req, res) => {
   try {
     const [results] = await db.query(`
-      SELECT subscriptions.*, clients.cl_name, clients.cl_phone 
+      SELECT subscriptions.*, clients.cl_name, clients.cl_phone, settings.st_barcode
       FROM subscriptions 
       JOIN clients ON subscriptions.su_client_id = clients.cl_id 
+      LEFT JOIN settings ON clients.cl_id = settings.st_cl_id
       WHERE subscriptions.su_id = ?
     `, [req.params.id]);
 
@@ -34,7 +37,6 @@ exports.getById = async (req, res) => {
   }
 };
 
-// إضافة اشتراك
 exports.add = async (req, res) => {
   const { su_client_id, su_start_date, su_end_date, su_status, su_type, su_duration } = req.body;
 
@@ -64,17 +66,52 @@ exports.add = async (req, res) => {
     if (su_type === 'trial') actualType = 'trial';
     else if (countResult[0].count === 0) actualType = 'first';
 
+    let linkCode = null;
+
     if (actualType === 'first' || actualType === 'trial') {
       const [existingUsers] = await db.query('SELECT * FROM us_users WHERE us_client_id = ?', [su_client_id]);
+
       if (existingUsers.length === 0) {
         const username = "user_" + su_client_id;
         const password = crypto.randomBytes(4).toString("hex");
-        const linkCode = crypto.randomBytes(12).toString("hex");
+        linkCode = crypto.randomBytes(12).toString("hex");
 
         await db.query(
           'INSERT INTO us_users (us_client_id, us_username, us_password, us_link_code) VALUES (?, ?, ?, ?)',
           [su_client_id, username, password, linkCode]
         );
+
+        // توليد باركود
+        const imageName = `barcode_${linkCode}.png`;
+        const tmpDir = path.join(__dirname, "../../../tmp");
+        if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir);
+
+        const imagePath = path.join(tmpDir, imageName);
+        const clientUrl = `https://menu.tiklamu.com/?link_code=${linkCode}`;
+
+        await QRCode.toFile(imagePath, clientUrl, {
+          width: 300,
+          margin: 2,
+          color: { dark: "#000", light: "#fff" }
+        });
+
+        // رفع الباركود إلى ImageKit
+        const uploadResponse = await imagekit.upload({
+          file: imagePath,
+          fileName: imageName,
+          folder: `/menu_project/${linkCode}/settings`,
+          overwriteFile: true
+        });
+
+        // حفظ رابط الباركود
+        await db.query(`
+          INSERT INTO settings (st_cl_id, st_barcode) 
+          VALUES (?, ?) 
+          ON DUPLICATE KEY UPDATE st_barcode = ?
+        `, [su_client_id, uploadResponse.url, uploadResponse.url]);
+
+        // حذف الملف المحلي
+        fs.unlinkSync(imagePath);
       }
     }
 
@@ -96,7 +133,6 @@ exports.add = async (req, res) => {
   }
 };
 
-// تحديث اشتراك
 exports.update = async (req, res) => {
   try {
     const id = req.params.id;
@@ -113,7 +149,6 @@ exports.update = async (req, res) => {
   }
 };
 
-// حذف اشتراك
 exports.delete = async (req, res) => {
   try {
     const id = req.params.id;
@@ -128,7 +163,8 @@ exports.delete = async (req, res) => {
 
     if (countRes[0].count === 0) {
       await db.query('DELETE FROM us_users WHERE us_client_id = ?', [clientId]);
-      res.json({ message: "✅ تم الحذف مع بيانات الدخول" });
+      await db.query('DELETE FROM settings WHERE st_cl_id = ?', [clientId]);
+      res.json({ message: "✅ تم الحذف مع بيانات الدخول والباركود" });
     } else {
       res.json({ message: "✅ تم الحذف" });
     }
