@@ -36,7 +36,7 @@ router.get("/:link_code", async (req, res) => {
 
     // 3. جلب الأصناف المرتبطة بأقسام العميل
     const [itemsRaw] = await db.query(`
-      SELECT it_id, it_se_id, it_name, it_price, it_description, it_image
+      SELECT it_id, it_se_id, it_name, it_price, it_description, it_image, it_available
       FROM items
       WHERE it_se_id IN (
         SELECT se_id FROM sections WHERE se_client_id = ? AND se_is_active = 1
