@@ -1,7 +1,7 @@
 const crypto = require("crypto");
 const db = require("../../shared/db");
 const QRCode = require("qrcode");
-const imagekit = require("../../shared/imagekit");
+const imagekit = require("../../utils/imagekit"); // ✅ استخدام ImageKit
 const path = require("path");
 const fs = require("fs");
 
