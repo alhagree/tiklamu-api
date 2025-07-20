@@ -8,7 +8,9 @@ const path = require("path");
 const allowedOrigins = [
   "https://menu-agent.vercel.app",
   "https://menu-client-puce.vercel.app",
-  "https://menu-admin-nu.vercel.app"
+  "https://menu-admin-nu.vercel.app",
+  "https://menu.tiklamu.com/",
+  "https://agent.tiklamu.com/",
 ];
 
 app.use(
