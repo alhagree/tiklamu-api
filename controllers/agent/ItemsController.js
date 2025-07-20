@@ -112,6 +112,7 @@ exports.updateItem = async (req, res) => {
       it_description,
       it_se_id,
       it_is_active,
+      it_available,
     } = req.body;
 
     let imageUrl = null;
@@ -132,6 +133,7 @@ exports.updateItem = async (req, res) => {
         it_description = ?,
         it_se_id = ?,
         it_is_active = ?
+        it_available = ?
     `;
     const params = [
       it_name,
@@ -139,6 +141,7 @@ exports.updateItem = async (req, res) => {
       it_description || "",
       parseInt(it_se_id),
       it_is_active == "1" ? 1 : 0,
+      it_available == "1" ? 1 : 0,
     ];
 
     if (imageUrl) {
