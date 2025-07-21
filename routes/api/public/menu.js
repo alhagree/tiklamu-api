@@ -33,20 +33,33 @@ router.get("/:link_code", async (req, res) => {
     if (client.US_ACTIVE == 0 || client.CL_ACTIVE == 0)
       return res.status(404).json({ message: "العميل غير مفعل" });
 
-    // 2. فحص الاشتراك الفعّال والمنتهي
+    // 2. جلب آخر اشتراك فعّال (بغض النظر عن التاريخ)
     const [subRows] = await db.query(`
       SELECT *
       FROM subscriptions
-      WHERE su_client_id = ?
-        AND su_status = 1
-        AND STR_TO_DATE(CAST(su_end_date AS CHAR), '%Y-%m-%d') >= CURRENT_DATE()
+      WHERE su_client_id = ? AND su_status = 1
       ORDER BY su_start_date DESC
       LIMIT 1
     `, [client.cl_id]);
 
-    console.debug("عدد الاشتراكات الفعالة:", subRows.length);
-    console.debug("الاشتراك:", subRows[0]);
+    // إذا لا يوجد أي اشتراك فعّال
+    if (subRows.length === 0) {
+      return res.status(403).json({ message: "لا يوجد اشتراك فعّال" });
+    }
 
+    // فحص التاريخ برمجياً
+    const subscription = subRows[0];
+
+    // تحويل قيمة su_end_date من blob إلى string
+    const endDateStr = subscription.su_end_date.toString('utf8'); // ← مهم جداً
+    const today = new Date().toISOString().split("T")[0]; // تنسيق yyyy-mm-dd
+
+    console.debug("تاريخ الانتهاء:", endDateStr);
+    console.debug("تاريخ اليوم:", today);
+
+    if (endDateStr < today) {
+      return res.status(403).json({ message: "انتهت صلاحية الاشتراك" });
+    }
 
     if (subRows.length === 0)
       return res.status(403).json({ message: "الاشتراك غير فعّال أو منتهي" });
