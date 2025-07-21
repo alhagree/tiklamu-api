@@ -39,7 +39,7 @@ router.get("/:link_code", async (req, res) => {
       FROM subscriptions
       WHERE su_client_id = ?
         AND su_status = 1
-        AND su_end_date >= CURRENT_DATE()
+        AND STR_TO_DATE(CAST(su_end_date AS CHAR), '%Y-%m-%d') >= CURRENT_DATE()
       ORDER BY su_start_date DESC
       LIMIT 1
     `, [client.cl_id]);
