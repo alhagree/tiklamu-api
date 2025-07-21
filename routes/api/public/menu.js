@@ -24,12 +24,12 @@ router.get("/:link_code", async (req, res) => {
     const [userRows] = await db.query(userQuery, [linkCode]);
 
     if (userRows.length === 0)
-      return res.status(404).json({ message: "العميل غير موجود" });
+      return res.status(404).json({ message: "العميل المطلوب لا تتوفر بياناته." });
 
     const client = userRows[0];
 
     if (client.US_ACTIVE == 0 || client.CL_ACTIVE == 0)
-      return res.status(403).json({ message: "الحساب غير مفعل" });
+      return res.status(403).json({ message: "تم تعطيل الحساب، يرجى التواصل مع الادارة لتشغيله" });
 
     // 2. جلب الاشتراك الفعّال
     const [subRows] = await db.query(`
@@ -41,14 +41,14 @@ router.get("/:link_code", async (req, res) => {
     `, [client.cl_id]);
 
     if (subRows.length === 0)
-      return res.status(403).json({ message: "لا يوجد اشتراك فعّال" });
+      return res.status(403).json({ message: "تم ايقاف الاشتراك مؤقتا من قبل الادارة، يرجى التواصل لاعادة التفعيل" });
 
     const subscription = subRows[0];
     const endDateStr = subscription.su_end_date.toString('utf8');
     const today = new Date().toISOString().split("T")[0];
 
     if (endDateStr < today)
-      return res.status(403).json({ message: "انتهت صلاحية الاشتراك" });
+      return res.status(403).json({ message: "انتهت مدة الاشتراك، تواصل مع الادارة للتجديد" });
 
     // 3. جلب الأقسام
     const [sections] = await db.query(`
