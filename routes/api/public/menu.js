@@ -12,11 +12,13 @@ router.get("/:link_code", async (req, res) => {
       SELECT 
         cl.cl_id,
         cl.cl_name AS client_name,
-        st.st_logo AS logo
+        st.st_logo AS logo,
+        us.us_is_active as US_ACTIVE,
+        cl.cl_is_active as CL_ACTIVE
       FROM us_users us
       JOIN clients cl ON cl.cl_id = us.us_client_id
       LEFT JOIN settings st ON st.st_cl_id = cl.cl_id
-      WHERE us.us_link_code = ? AND us.us_is_active = 1 AND cl.cl_is_active = 1
+      WHERE us.us_link_code = ?
       LIMIT 1
     `;
     const [userRows] = await db.query(userQuery, [linkCode]);
@@ -25,6 +27,9 @@ router.get("/:link_code", async (req, res) => {
       return res.status(404).json({ message: "العميل غير موجود أو غير مفعل" });
 
     const client = userRows[0];
+
+    if (client.US_ACTIVE == 0 || client.CL_ACTIVE == 0)
+      return res.status(404).json({ message: "العميل غير موجود أو غير مفعل" });
 
     // 2. جلب الأقسام الخاصة بالعميل
     const [sections] = await db.query(`
