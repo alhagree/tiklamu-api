@@ -24,12 +24,18 @@ router.get("/:link_code", async (req, res) => {
     const [userRows] = await db.query(userQuery, [linkCode]);
 
     if (userRows.length === 0)
-      return res.status(404).json({ message: "العميل المطلوب لا تتوفر بياناته." });
+      return res.status(404).json({
+        message: "العميل المطلوب لا تتوفر بياناته.",
+        error_code: "client_not_found"
+      });
 
     const client = userRows[0];
 
     if (client.US_ACTIVE == 0 || client.CL_ACTIVE == 0)
-      return res.status(403).json({ message: "تم تعطيل الحساب، يرجى التواصل مع الادارة لتشغيله" });
+      return res.status(403).json({
+        message: "تم تعطيل الحساب، يرجى التواصل مع الادارة لتشغيله",
+        error_code: "account_inactive"
+      });
 
     // 2. جلب الاشتراك الفعّال
     const [subRows] = await db.query(`
@@ -41,14 +47,21 @@ router.get("/:link_code", async (req, res) => {
     `, [client.cl_id]);
 
     if (subRows.length === 0)
-      return res.status(403).json({ message: "تم ايقاف الاشتراك مؤقتا من قبل الادارة، يرجى التواصل لاعادة التفعيل" });
+      return res.status(403).json({
+        message: "تم ايقاف الاشتراك مؤقتا من قبل الادارة، يرجى التواصل لاعادة التفعيل",
+        error_code: "subscription_inactive"
+      });
 
     const subscription = subRows[0];
     const endDateStr = subscription.su_end_date.toString('utf8');
     const today = new Date().toISOString().split("T")[0];
 
     if (endDateStr < today)
-      return res.status(403).json({ message: "انتهت مدة الاشتراك، تواصل مع الادارة للتجديد" });
+      return res.status(403).json({
+        message: "انتهت مدة الاشتراك، تواصل مع الادارة للتجديد",
+        error_code: "subscription_expired"
+      });
+
 
     // 3. جلب الأقسام
     const [sections] = await db.query(`
