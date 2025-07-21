@@ -1,3 +1,4 @@
+//backend\routes\api\public\menu.js
 const express = require("express");
 const router = express.Router();
 const db = require("../../../shared/db");
@@ -27,44 +28,10 @@ router.get("/:link_code", async (req, res) => {
 
     const client = userRows[0];
 
-    console.debug("client.US_ACTIVE : ", client.US_ACTIVE);
-    console.debug("client.CL_ACTIVE : ", client.CL_ACTIVE);
-
     if (client.US_ACTIVE == 0 || client.CL_ACTIVE == 0)
-      return res.status(404).json({ message: "العميل غير مفعل" });
+      return res.status(404).json({ message: "العميل غير موجود أو غير مفعل" });
 
-    // 2. جلب آخر اشتراك فعّال (بغض النظر عن التاريخ)
-    const [subRows] = await db.query(`
-      SELECT *
-      FROM subscriptions
-      WHERE su_client_id = ? AND su_status = 1
-      ORDER BY su_start_date DESC
-      LIMIT 1
-    `, [client.cl_id]);
-
-    // إذا لا يوجد أي اشتراك فعّال
-    if (subRows.length === 0) {
-      return res.status(403).json({ message: "لا يوجد اشتراك فعّال" });
-    }
-
-    // فحص التاريخ برمجياً
-    const subscription = subRows[0];
-
-    // تحويل قيمة su_end_date من blob إلى string
-    const endDateStr = subscription.su_end_date.toString('utf8'); // ← مهم جداً
-    const today = new Date().toISOString().split("T")[0]; // تنسيق yyyy-mm-dd
-
-    console.debug("تاريخ الانتهاء:", endDateStr);
-    console.debug("تاريخ اليوم:", today);
-
-    if (endDateStr < today) {
-      return res.status(403).json({ message: "انتهت صلاحية الاشتراك" });
-    }
-
-    if (subRows.length === 0)
-      return res.status(403).json({ message: "الاشتراك غير فعّال أو منتهي" });
-
-    // 3. جلب الأقسام الخاصة بالعميل
+    // 2. جلب الأقسام الخاصة بالعميل
     const [sections] = await db.query(`
       SELECT se_id, se_name, se_image
       FROM sections
@@ -72,7 +39,7 @@ router.get("/:link_code", async (req, res) => {
       ORDER BY se_id ASC
     `, [client.cl_id]);
 
-    // 4. جلب الأصناف المرتبطة بأقسام العميل
+    // 3. جلب الأصناف المرتبطة بأقسام العميل
     const [itemsRaw] = await db.query(`
       SELECT it_id, it_se_id, it_name, it_price, it_description, it_image, it_available
       FROM items
@@ -82,13 +49,13 @@ router.get("/:link_code", async (req, res) => {
       ORDER BY it_id ASC
     `, [client.cl_id]);
 
-    // 5. تنسيق الأسعار
+    // 3.1 تنسيق السعر ليكون "2,000" بدلاً من 2000
     const items = itemsRaw.map(item => ({
       ...item,
-      it_price: Number(item.it_price).toLocaleString('en-US'),
+      it_price: Number(item.it_price).toLocaleString('en-US'), // يمكنك تغيير 'en-US' حسب التنسيق المطلوب
     }));
 
-    // 6. إرسال الاستجابة
+    // 4. تجهيز الاستجابة
     res.json({
       client_name: client.client_name,
       logo_url: client.logo,
@@ -100,6 +67,6 @@ router.get("/:link_code", async (req, res) => {
     console.error("⚠️ خطأ في جلب المنيو:", err);
     res.status(500).json({ message: "حدث خطأ في السيرفر" });
   }
-});
+}); 
 
 module.exports = router;
