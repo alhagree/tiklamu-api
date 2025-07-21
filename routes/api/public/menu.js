@@ -44,6 +44,10 @@ router.get("/:link_code", async (req, res) => {
       LIMIT 1
     `, [client.cl_id]);
 
+    console.debug("عدد الاشتراكات الفعالة:", subRows.length);
+    console.debug("الاشتراك:", subRows[0]);
+
+
     if (subRows.length === 0)
       return res.status(403).json({ message: "الاشتراك غير فعّال أو منتهي" });
 
