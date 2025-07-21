@@ -31,6 +31,9 @@ router.get("/:link_code", async (req, res) => {
     if (client.US_ACTIVE == 0 || client.CL_ACTIVE == 0)
       return res.status(404).json({ message: "العميل غير موجود أو غير مفعل" });
 
+    console.debug("US_ACTIVE : " , client.US_ACTIVE);
+    console.debug("CL_ACTIVE : " , client.CL_ACTIVE);
+    
     // 2. جلب الأقسام الخاصة بالعميل
     const [sections] = await db.query(`
       SELECT se_id, se_name, se_image
