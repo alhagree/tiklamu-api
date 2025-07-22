@@ -59,7 +59,7 @@ exports.login = async (req, res) => {
     const endDateStr = subscription.su_end_date.toString('utf8');
     const today = new Date().toISOString().split("T")[0];
 
-    const isExpired = endDateStr < todayStr;
+    const isExpired = endDateStr < today;
 
 
     // 4. ✅ إصدار التوكن والرد
