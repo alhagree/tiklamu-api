@@ -55,9 +55,9 @@ exports.login = async (req, res) => {
     }
 
     const endDateStr = subs[0].su_end_date.toISOString().split("T")[0];
-    const todayStr = new Date().toISOString().split("T")[0];
+    const today = new Date().toISOString().split("T")[0];
 
-    if (endDateStr < todayStr) {
+    if (endDateStr < today) {
       return res.status(403).json({
         error: "انتهت مدة الاشتراك، يرجى التجديد مع الإدارة",
         error_code: "subscription_expired"
