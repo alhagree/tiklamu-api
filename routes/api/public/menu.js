@@ -54,9 +54,11 @@ router.get("/:link_code", async (req, res) => {
 
     const subscription = subRows[0];
     const endDateStr = subscription.su_end_date.toString('utf8');
-    const today = new Date().toISOString().split("T")[0];
+    const today = new Date();
+    today.setDate(today.getDate() + 7);
+    const result = today.toISOString().split("T")[0];
 
-    if (endDateStr < today)
+    if (endDateStr < result)
       return res.status(403).json({
         message: "انتهت مدة الاشتراك، تواصل مع الادارة للتجديد",
         error_code: "subscription_expired"
