@@ -99,7 +99,7 @@ router.get("/:link_code", async (req, res) => {
       subscription: {
         type: subscription.su_type,
         start_date: subscription.su_start_date.toString('utf8'),
-        end_date: endDateStr,
+        end_date: subscription.su_end_date.toString('utf8'),
         duration: subscription.su_duration
       },
       sections,
