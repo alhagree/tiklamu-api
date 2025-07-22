@@ -53,16 +53,20 @@ router.get("/:link_code", async (req, res) => {
       });
 
     const subscription = subRows[0];
-    const endDateStr = subscription.su_end_date.toString('utf8');
+    const end = new Date(subscription.su_end_date);
     const today = new Date();
-    today.setDate(today.getDate() + 7);
-    const result = today.toISOString().split("T")[0];
 
-    if (endDateStr < result)
+    // إضافة 7 أيام على تاريخ نهاية الاشتراك
+    const graceLimit = new Date(end);
+    graceLimit.setDate(graceLimit.getDate() + 7);
+
+    // الآن: إذا تاريخ اليوم > تاريخ السماح → المنيو يتوقف
+    if (today > graceLimit) {
       return res.status(403).json({
         message: "انتهت مدة الاشتراك، تواصل مع الادارة للتجديد",
         error_code: "subscription_expired"
       });
+    }
 
 
     // 3. جلب الأقسام
