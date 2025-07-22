@@ -1,3 +1,4 @@
+// SubscriptionsController.js
 const crypto = require("crypto");
 const db = require("../../shared/db");
 const QRCode = require("qrcode");
@@ -11,6 +12,7 @@ exports.getAll = async (req, res) => {
       SELECT subscriptions.*, clients.cl_name, clients.cl_phone 
       FROM subscriptions 
       JOIN clients ON subscriptions.su_client_id = clients.cl_id
+      LEFT JOIN levels ON subscriptions.su_level_id = levels.la_id
     `);
     res.json(results);
   } catch (err) {
@@ -25,6 +27,7 @@ exports.getById = async (req, res) => {
       FROM subscriptions 
       JOIN clients ON subscriptions.su_client_id = clients.cl_id 
       LEFT JOIN settings ON clients.cl_id = settings.st_cl_id
+      LEFT JOIN levels ON subscriptions.su_level_id = levels.la_id
       WHERE subscriptions.su_id = ?
     `, [req.params.id]);
 
@@ -44,11 +47,15 @@ exports.add = async (req, res) => {
     su_end_date,
     su_status,
     su_type,
-    su_duration
+    su_duration,
+    su_level_id,
   } = req.body;
 
   if (!su_client_id || !su_start_date || !su_end_date)
     return res.status(400).json({ message: "❌ بيانات ناقصة" });
+
+  if (!su_level_id)
+  return res.status(400).json({ message: "❌ يجب اختيار باقة الاشتراك" });
 
   try {
     const [clientResult] = await db.query('SELECT * FROM clients WHERE cl_id = ?', [su_client_id]);
@@ -117,19 +124,21 @@ exports.add = async (req, res) => {
       }
     }
 
-    const [insertResult] = await db.query(
-      `INSERT INTO subscriptions 
-        (su_client_id, su_start_date, su_end_date, su_status, su_type, su_duration)
-        VALUES (?, ?, ?, ?, ?, ?)`,
-      [
-        su_client_id,
-        su_start_date,
-        su_end_date,
-        su_status || "active",
-        actualType,
-        actualType === 'trial' ? null : su_duration || null
-      ]
-    );
+const [insertResult] = await db.query(
+  `INSERT INTO subscriptions 
+    (su_client_id, su_start_date, su_end_date, su_status, su_type, su_duration, su_level_id)
+    VALUES (?, ?, ?, ?, ?, ?, ?)`,
+  [
+    su_client_id,
+    su_start_date,
+    su_end_date,
+    su_status || "active",
+    actualType,
+    actualType === 'trial' ? null : su_duration || null,
+    su_level_id // ✅ جديد
+  ]
+);
+
 
     res.json({ message: "✅ تمت الإضافة", id: insertResult.insertId });
   } catch (err) {
@@ -141,12 +150,23 @@ exports.add = async (req, res) => {
 exports.update = async (req, res) => {
   try {
     const id = req.params.id;
-    const { su_start_date, su_end_date, su_status, su_type, su_duration } = req.body;
+    const { su_start_date, su_end_date, su_status, su_type, su_duration, su_level_id  } = req.body;
 
     await db.query(
-      'UPDATE subscriptions SET su_start_date = ?, su_end_date = ?, su_status = ?, su_type = ?, su_duration = ? WHERE su_id = ?',
-      [su_start_date, su_end_date, su_status, su_type || "renew", su_duration || null, id]
-    );
+  `UPDATE subscriptions 
+   SET su_start_date = ?, su_end_date = ?, su_status = ?, su_type = ?, su_duration = ?, su_level_id = ?
+   WHERE su_id = ?`,
+  [
+    su_start_date,
+    su_end_date,
+    su_status,
+    su_type || "renew",
+    su_duration || null,
+    su_level_id, // ✅ جديد
+    id
+  ]
+);
+
 
     res.json({ message: "✅ تم التحديث" });
   } catch (err) {
