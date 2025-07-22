@@ -58,7 +58,7 @@ router.get("/:link_code", async (req, res) => {
 
     // إضافة 7 أيام على تاريخ نهاية الاشتراك
     const graceLimit = new Date(end);
-    graceLimit.setDate(graceLimit.getDate() + 7);
+    graceLimit.setDate(graceLimit.getDate() + 8);
 
     // الآن: إذا تاريخ اليوم > تاريخ السماح → المنيو يتوقف
     if (today > graceLimit) {
