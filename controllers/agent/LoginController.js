@@ -55,8 +55,9 @@ exports.login = async (req, res) => {
     }
 
     // ✅ نسمح بالدخول حتى لو منتهي
-    const endDateStr = subs[0].su_end_date.toISOString().split("T")[0];
-    const todayStr = new Date().toISOString().split("T")[0];
+    const subscription = subs[0];
+    const endDateStr = subscription.su_end_date.toString('utf8');
+    const today = new Date().toISOString().split("T")[0];
 
     const isExpired = endDateStr < todayStr;
 
