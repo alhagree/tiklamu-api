@@ -152,6 +152,11 @@ exports.update = async (req, res) => {
     const id = req.params.id;
     const { su_start_date, su_end_date, su_status, su_type, su_duration, su_level_id  } = req.body;
 
+    if (!su_level_id) {
+  return res.status(400).json({ message: "❌ يجب اختيار باقة الاشتراك" });
+}
+
+
     await db.query(
   `UPDATE subscriptions 
    SET su_start_date = ?, su_end_date = ?, su_status = ?, su_type = ?, su_duration = ?, su_level_id = ?
