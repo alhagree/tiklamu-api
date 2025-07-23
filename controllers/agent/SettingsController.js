@@ -36,18 +36,71 @@ exports.getFullSettingsWithSubscription = async (req, res) => {
       days_remaining = Math.ceil((end - today) / (1000 * 60 * 60 * 24));
     }
 
+    // إذا لم يكن هناك اشتراك، نرجع البيانات الأساسية فقط
+    if (!subscription.su_level_id) {
+      return res.json({
+        ...settings,
+        ...client,
+        ...subscription,
+        days_remaining,
+      });
+    }
+
+    // 🧩 جلب اسم ووصف الخطة
+    const [levelRows] = await db.query(
+      `SELECT la_name AS level_name, la_description AS level_description FROM levels WHERE la_id = ? LIMIT 1`,
+      [subscription.su_level_id]
+    );
+    const level = levelRows[0] || {};
+
+    // 🧩 جلب خصائص الخطة
+    const [featureRows] = await db.query(
+      `SELECT lf_key, lf_value FROM level_features WHERE lf_level_id = ?`,
+      [subscription.su_level_id]
+    );
+
+    // بناء كائن الخصائص
+    const features = {};
+    featureRows.forEach((row) => {
+      features[row.lf_key] = parseInt(row.lf_value);
+    });
+
+    // 🧮 عدّاد عدد الأقسام الحالية
+    const [sectionCountRows] = await db.query(
+      `SELECT COUNT(*) AS count FROM sections WHERE se_client_id = ?`,
+      [clientId]
+    );
+    const section_count = sectionCountRows[0]?.count || 0;
+
+    // 🧮 عدّاد عدد الأصناف الحالية
+    const [itemCountRows] = await db.query(
+      `SELECT COUNT(*) AS count FROM items 
+       JOIN sections ON items.it_se_id = sections.se_id
+       WHERE sections.se_client_id = ?`,
+      [clientId]
+    );
+    const item_count = itemCountRows[0]?.count || 0;
+
+    // ✅ التجميع النهائي للرد
     res.json({
       ...settings,
       ...client,
       ...subscription,
       days_remaining,
+      ...level,
+      level_max_items: features.max_items || 0,
+      level_max_sections: features.max_sections || 0,
+      level_has_dashboard: features.has_dashboard === 1,
+      level_can_customize: features.can_customize_logo === 1,
+      section_count,
+      item_count,
     });
+
   } catch (err) {
     console.error("Full Settings Error:", err);
     res.status(500).json({ error: "خطأ أثناء جلب البيانات" });
   }
 };
-
 
 // ✅ جلب الإعدادات
 exports.getSettings = async (req, res) => {
