@@ -26,15 +26,12 @@ exports.getDashboardData = async (req, res) => {
       [client_id]
     );
 
-    // الاشتراك (حتى لو منتهي)
+// الاشتراك (حتى لو منتهي)
 const [subscriptionRes] = await db.query(
   `SELECT 
-     su_end_date,
-     l.la_name AS level_name,
-     l.la_section_limit AS section_limit,
-     l.la_item_limit AS item_limit,
-     l.la_has_dashboard AS has_dashboard,
-     l.la_has_logo AS has_logo
+     s.su_end_date,
+     l.la_id AS level_id,
+     l.la_name AS level_name
    FROM subscriptions s
    JOIN levels l ON s.su_level_id = l.la_id
    WHERE s.su_client_id = ?
@@ -55,6 +52,37 @@ if (end) {
   daysLeft = Math.ceil(diff / (1000 * 60 * 60 * 24));
 }
 
+// ✅ جلب مزايا الخطة من جدول level_features
+let featuresMap = {
+  max_items: 0,
+  max_sections: 0,
+  has_dashboard: false,
+  can_customize_logo: false,
+};
+
+if (subscription?.level_id) {
+  const [features] = await db.query(
+    `SELECT lf_key, lf_value FROM level_features WHERE lf_level_id = ?`,
+    [subscription.level_id]
+  );
+
+  for (let feature of features) {
+    const key = feature.lf_key;
+    let val = feature.lf_value;
+
+    // تحويل القيم الرقمية والمنطقية
+    if (val === "unlimited") {
+      featuresMap[key] = "غير محدود";
+    } else if (val === "0" || val === "1") {
+      featuresMap[key] = val === "1";
+    } else if (!isNaN(val)) {
+      featuresMap[key] = parseInt(val);
+    } else {
+      featuresMap[key] = val;
+    }
+  }
+}
+
 const result = {
   username: sectionClient[0]?.cl_name || "",
   sectionCount: sectionRes[0]?.count || 0,
@@ -63,17 +91,18 @@ const result = {
   subscriptionExpired: isExpired,
   daysLeft,
 
-  // ✅ بيانات الباقة
+  // ✅ معلومات الباقة ومزاياها
   level: {
     name: subscription?.level_name || "غير محددة",
-    sectionLimit: subscription?.section_limit ?? 0,
-    itemLimit: subscription?.item_limit ?? 0,
-    hasDashboard: subscription?.has_dashboard == 1,
-    hasLogo: subscription?.has_logo == 1,
+    sectionLimit: featuresMap.max_sections,
+    itemLimit: featuresMap.max_items,
+    hasDashboard: featuresMap.has_dashboard,
+    hasLogo: featuresMap.can_customize_logo,
   },
 };
 
 return res.json(result);
+
 
   } catch (err) {
     console.error("Dashboard error:", err);
