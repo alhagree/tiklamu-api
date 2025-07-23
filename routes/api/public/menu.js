@@ -57,18 +57,20 @@ const subscription = subRows[0];
 const levelId = subscription.su_level_id || null;
 
 let level = {
-  le_name: "غير محددة",
-  le_max_sections: 1000,
-  le_max_items: 10000
+  name: "غير محددة",
+  max_sections: 1000,
+  max_items: 10000
 };
 
 if (levelId) {
+  // جلب اسم الخطة الحقيقي
   const [levelRows] = await db.query(`
-    SELECT le_name FROM levels WHERE le_id = ?
+    SELECT la_name FROM levels WHERE la_id = ?
   `, [levelId]);
 
-  const levelName = levelRows.length > 0 ? levelRows[0].le_name : "غير محددة";
+  const levelName = levelRows.length > 0 ? levelRows[0].la_name : "غير محددة";
 
+  // جلب مزايا الخطة
   const [featuresRows] = await db.query(`
     SELECT lf_key, lf_value
     FROM level_features
@@ -76,15 +78,16 @@ if (levelId) {
   `, [levelId]);
 
   const features = Object.fromEntries(
-    featuresRows.map(f => [f.lf_key, parseInt(f.lf_value)])
+    featuresRows.map(f => [f.lf_key, f.lf_value === "unlimited" ? "unlimited" : parseInt(f.lf_value)])
   );
 
   level = {
-    le_name: levelName,
-    le_max_sections: features.max_sections ?? 1000,
-    le_max_items: features.max_items ?? 10000
+    name: levelName,
+    max_sections: features.max_sections ?? 1000,
+    max_items: features.max_items ?? 10000
   };
 }
+
 
 
     
@@ -112,8 +115,14 @@ const [allSections] = await db.query(`
 `, [client.cl_id]);
 
 // قسمها حسب العدد المسموح
-const displayedSections = allSections.slice(0, level.le_max_sections);
-const hiddenSections = allSections.slice(level.le_max_sections);
+const displayedSections = level.max_sections === "unlimited"
+  ? allSections
+  : allSections.slice(0, level.max_sections);
+
+const hiddenSections = level.max_sections === "unlimited"
+  ? []
+  : allSections.slice(level.max_sections);
+
 
 
     // 4. جلب الأصناف
@@ -134,27 +143,28 @@ const [itemsRaw] = sectionIds.length > 0
     }));
 
     console.log("📦 عدد الأقسام الفعالة:", allSections.length);
-    console.log("✅ عدد الأقسام المسموح بها:", level.le_max_sections);
+    console.log("✅ عدد الأقسام المسموح بها:", level.max_sections);
     console.log("📤 الأقسام المعروضة:", displayedSections.map(s => s.se_name));
     console.log("🚫 الأقسام المخفية:", hiddenSections.map(s => s.se_name));
 
     // 5. الاستجابة النهائية
-    res.json({
-      client_name: client.client_name,
-      logo_url: client.logo,
-      subscription: {
-        type: subscription.su_type,
-        start_date: subscription.su_start_date.toString('utf8'),
-        end_date: subscription.su_end_date.toString('utf8'),
-        duration: subscription.su_duration,
-        level_name: level.le_name,
-        max_sections: level.le_max_sections,
-        max_items: level.le_max_items
-      },
-      sections: displayedSections,
-      items,
-      hidden_sections: hiddenSections.map(s => s.se_name), // ← للأغراض التنبيهية
-    });
+res.json({
+  client_name: client.client_name,
+  logo_url: client.logo,
+  subscription: {
+    type: subscription.su_type,
+    start_date: subscription.su_start_date.toString('utf8'),
+    end_date: subscription.su_end_date.toString('utf8'),
+    duration: subscription.su_duration,
+    level_name: level.name,
+    max_sections: level.max_sections,
+    max_items: level.max_items
+  },
+  sections: displayedSections,
+  items,
+  hidden_sections: hiddenSections.map(s => s.se_name),
+});
+
 
 
   } catch (err) {
