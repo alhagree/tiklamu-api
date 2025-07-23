@@ -53,6 +53,23 @@ router.get("/:link_code", async (req, res) => {
       });
 
     const subscription = subRows[0];
+const levelId = subscription.su_level_id || null;
+
+let level = { le_max_sections: 1000, le_max_items: 10000, le_name: "غير محددة" };
+
+if (levelId) {
+  const [levelRows] = await db.query(`
+    SELECT le_max_sections, le_max_items, le_name
+    FROM levels
+    WHERE le_id = ?
+  `, [levelId]);
+
+  if (levelRows.length > 0) {
+    level = levelRows[0];
+  }
+}
+
+    
     const end = new Date(subscription.su_end_date);
     const today = new Date();
 
@@ -68,24 +85,30 @@ router.get("/:link_code", async (req, res) => {
       });
     }
 
+// 3. جلب كل الأقسام الفعالة
+const [allSections] = await db.query(`
+  SELECT se_id, se_name, se_image
+  FROM sections
+  WHERE se_client_id = ? AND se_is_active = 1
+  ORDER BY se_id ASC
+`, [client.cl_id]);
 
-    // 3. جلب الأقسام
-    const [sections] = await db.query(`
-      SELECT se_id, se_name, se_image
-      FROM sections
-      WHERE se_client_id = ? AND se_is_active = 1
-      ORDER BY se_id ASC
-    `, [client.cl_id]);
+// قسمها حسب العدد المسموح
+const displayedSections = allSections.slice(0, level.le_max_sections);
+const hiddenSections = allSections.slice(level.le_max_sections);
+
 
     // 4. جلب الأصناف
-    const [itemsRaw] = await db.query(`
+const sectionIds = displayedSections.map(se => se.se_id);
+const [itemsRaw] = sectionIds.length > 0
+  ? await db.query(`
       SELECT it_id, it_se_id, it_name, it_price, it_description, it_image, it_available
       FROM items
-      WHERE it_se_id IN (
-        SELECT se_id FROM sections WHERE se_client_id = ? AND se_is_active = 1
-      ) AND it_is_active = 1
+      WHERE it_se_id IN (?) AND it_is_active = 1
       ORDER BY it_id ASC
-    `, [client.cl_id]);
+    `, [sectionIds])
+  : [[]]; // لا يوجد أقسام
+
 
     const items = itemsRaw.map(item => ({
       ...item,
@@ -93,18 +116,23 @@ router.get("/:link_code", async (req, res) => {
     }));
 
     // 5. الاستجابة النهائية
-    res.json({
-      client_name: client.client_name,
-      logo_url: client.logo,
-      subscription: {
-        type: subscription.su_type,
-        start_date: subscription.su_start_date.toString('utf8'),
-        end_date: subscription.su_end_date.toString('utf8'),
-        duration: subscription.su_duration
-      },
-      sections,
-      items,
-    });
+res.json({
+  client_name: client.client_name,
+  logo_url: client.logo,
+  subscription: {
+    type: subscription.su_type,
+    start_date: subscription.su_start_date.toString('utf8'),
+    end_date: subscription.su_end_date.toString('utf8'),
+    duration: subscription.su_duration,
+    level_name: level.le_name,
+    max_sections: level.le_max_sections,
+    max_items: level.le_max_items
+  },
+  sections: displayedSections,
+  items,
+  hidden_sections: hiddenSections.map(s => s.se_name), // ← للأغراض التنبيهية
+});
+
 
   } catch (err) {
     console.error("⚠️ خطأ في جلب المنيو:", err);
