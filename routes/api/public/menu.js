@@ -137,11 +137,6 @@ router.get("/:link_code", async (req, res) => {
       it_price: Number(item.it_price).toLocaleString('en-US'),
     }));
 
-    console.log("📦 عدد الأقسام الفعالة:", allSections.length);
-    console.log("✅ عدد الأقسام المسموح بها:", level.max_sections);
-    console.log("📤 الأقسام المعروضة:", displayedSections.map(s => s.se_name));
-    console.log("🚫 الأقسام المخفية:", hiddenSections.map(s => s.se_name));
-
     // 5. الاستجابة النهائية
     res.json({
       client_name: client.client_name,
