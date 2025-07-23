@@ -16,7 +16,7 @@ exports.getFullSettingsWithSubscription = async (req, res) => {
 
     // معلومات العميل
     const [clientRows] = await db.query(
-      `SELECT cl_name, cl_phone FROM clients WHERE cl_id = ?`,
+      `SELECT cl_name, cl_fullname, cl_phone FROM clients WHERE cl_id = ?`,
       [clientId]
     );
     const client = clientRows[0] || {};
