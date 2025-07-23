@@ -8,13 +8,18 @@ const fs = require("fs");
 
 exports.getAll = async (req, res) => {
   try {
-    const [results] = await db.query(`
-      SELECT subscriptions.*, clients.cl_name, clients.cl_phone 
-      FROM subscriptions 
-      JOIN clients ON subscriptions.su_client_id = clients.cl_id
-      LEFT JOIN levels ON subscriptions.su_level_id = levels.la_id
+    const [subscriptions] = await db.query(`
+      SELECT 
+        s.*, 
+        c.cl_name, 
+        c.cl_phone,
+        l.la_name
+      FROM subscriptions s
+      JOIN clients c ON s.su_client_id = c.cl_id
+      LEFT JOIN levels l ON s.su_level_id = l.la_id
+      ORDER BY s.su_start_date DESC
     `);
-    res.json(results);
+    res.json(subscriptions);
   } catch (err) {
     res.status(500).json({ error: err });
   }
