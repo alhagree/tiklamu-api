@@ -115,23 +115,28 @@ const [itemsRaw] = sectionIds.length > 0
       it_price: Number(item.it_price).toLocaleString('en-US'),
     }));
 
+    console.log("📦 عدد الأقسام الفعالة:", allSections.length);
+    console.log("✅ عدد الأقسام المسموح بها:", level.le_max_sections);
+    console.log("📤 الأقسام المعروضة:", displayedSections.map(s => s.se_name));
+    console.log("🚫 الأقسام المخفية:", hiddenSections.map(s => s.se_name));
+
     // 5. الاستجابة النهائية
-res.json({
-  client_name: client.client_name,
-  logo_url: client.logo,
-  subscription: {
-    type: subscription.su_type,
-    start_date: subscription.su_start_date.toString('utf8'),
-    end_date: subscription.su_end_date.toString('utf8'),
-    duration: subscription.su_duration,
-    level_name: level.le_name,
-    max_sections: level.le_max_sections,
-    max_items: level.le_max_items
-  },
-  sections: displayedSections,
-  items,
-  hidden_sections: hiddenSections.map(s => s.se_name), // ← للأغراض التنبيهية
-});
+    res.json({
+      client_name: client.client_name,
+      logo_url: client.logo,
+      subscription: {
+        type: subscription.su_type,
+        start_date: subscription.su_start_date.toString('utf8'),
+        end_date: subscription.su_end_date.toString('utf8'),
+        duration: subscription.su_duration,
+        level_name: level.le_name,
+        max_sections: level.le_max_sections,
+        max_items: level.le_max_items
+      },
+      sections: displayedSections,
+      items,
+      hidden_sections: hiddenSections.map(s => s.se_name), // ← للأغراض التنبيهية
+    });
 
 
   } catch (err) {
