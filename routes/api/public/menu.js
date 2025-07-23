@@ -53,43 +53,40 @@ router.get("/:link_code", async (req, res) => {
         error_code: "subscription_inactive"
       });
 
-const subscription = subRows[0];
-const levelId = subscription.su_level_id || null;
+    const subscription = subRows[0];
+    const levelId = subscription.su_level_id || null;
 
-let level = {
-  name: "غير محددة",
-  max_sections: 1000,
-  max_items: 10000
-};
+    let level = {
+      name: "غير محددة",
+      max_sections: 1000,
+      max_items: 10000
+    };
 
-if (levelId) {
-  // جلب اسم الخطة الحقيقي
-  const [levelRows] = await db.query(`
-    SELECT la_name FROM levels WHERE la_id = ?
-  `, [levelId]);
+    if (levelId) {
+      // جلب اسم الخطة الحقيقي
+      const [levelRows] = await db.query(`
+        SELECT la_name FROM levels WHERE la_id = ?
+      `, [levelId]);
 
-  const levelName = levelRows.length > 0 ? levelRows[0].la_name : "غير محددة";
+      const levelName = levelRows.length > 0 ? levelRows[0].la_name : "غير محددة";
 
-  // جلب مزايا الخطة
-  const [featuresRows] = await db.query(`
-    SELECT lf_key, lf_value
-    FROM level_features
-    WHERE lf_level_id = ?
-  `, [levelId]);
+      // جلب مزايا الخطة
+      const [featuresRows] = await db.query(`
+        SELECT lf_key, lf_value
+        FROM level_features
+        WHERE lf_level_id = ?
+      `, [levelId]);
 
-  const features = Object.fromEntries(
-    featuresRows.map(f => [f.lf_key, f.lf_value === "unlimited" ? "unlimited" : parseInt(f.lf_value)])
-  );
+      const features = Object.fromEntries(
+        featuresRows.map(f => [f.lf_key, f.lf_value === "unlimited" ? "unlimited" : parseInt(f.lf_value)])
+      );
 
-  level = {
-    name: levelName,
-    max_sections: features.max_sections ?? 1000,
-    max_items: features.max_items ?? 10000
-  };
-}
-
-
-
+      level = {
+        name: levelName,
+        max_sections: features.max_sections ?? 1000,
+        max_items: features.max_items ?? 10000
+      };
+    }
     
     const end = new Date(subscription.su_end_date);
     const today = new Date();
@@ -106,35 +103,33 @@ if (levelId) {
       });
     }
 
-// 3. جلب كل الأقسام الفعالة
-const [allSections] = await db.query(`
-  SELECT se_id, se_name, se_image
-  FROM sections
-  WHERE se_client_id = ? AND se_is_active = 1
-  ORDER BY se_id ASC
-`, [client.cl_id]);
+    // 3. جلب كل الأقسام الفعالة
+    const [allSections] = await db.query(`
+      SELECT se_id, se_name, se_image
+      FROM sections
+      WHERE se_client_id = ? AND se_is_active = 1
+      ORDER BY se_id ASC
+    `, [client.cl_id]);
 
-// قسمها حسب العدد المسموح
-const displayedSections = level.max_sections === "unlimited"
-  ? allSections
-  : allSections.slice(0, level.max_sections);
+    // قسمها حسب العدد المسموح
+    const displayedSections = level.max_sections === "unlimited"
+      ? allSections
+      : allSections.slice(0, level.max_sections);
 
-const hiddenSections = level.max_sections === "unlimited"
-  ? []
-  : allSections.slice(level.max_sections);
-
-
+    const hiddenSections = level.max_sections === "unlimited"
+      ? []
+      : allSections.slice(level.max_sections);
 
     // 4. جلب الأصناف
-const sectionIds = displayedSections.map(se => se.se_id);
-const [itemsRaw] = sectionIds.length > 0
-  ? await db.query(`
-      SELECT it_id, it_se_id, it_name, it_price, it_description, it_image, it_available
-      FROM items
-      WHERE it_se_id IN (?) AND it_is_active = 1
-      ORDER BY it_id ASC
-    `, [sectionIds])
-  : [[]]; // لا يوجد أقسام
+    const sectionIds = displayedSections.map(se => se.se_id);
+    const [itemsRaw] = sectionIds.length > 0
+      ? await db.query(`
+          SELECT it_id, it_se_id, it_name, it_price, it_description, it_image, it_available
+          FROM items
+          WHERE it_se_id IN (?) AND it_is_active = 1
+          ORDER BY it_id ASC
+        `, [sectionIds])
+      : [[]]; // لا يوجد أقسام
 
 
     const items = itemsRaw.map(item => ({
@@ -148,25 +143,22 @@ const [itemsRaw] = sectionIds.length > 0
     console.log("🚫 الأقسام المخفية:", hiddenSections.map(s => s.se_name));
 
     // 5. الاستجابة النهائية
-res.json({
-  client_name: client.client_name,
-  logo_url: client.logo,
-  subscription: {
-    type: subscription.su_type,
-    start_date: subscription.su_start_date.toString('utf8'),
-    end_date: subscription.su_end_date.toString('utf8'),
-    duration: subscription.su_duration,
-    level_name: level.name,
-    max_sections: level.max_sections,
-    max_items: level.max_items
-  },
-  sections: displayedSections,
-  items,
-  hidden_sections: hiddenSections.map(s => s.se_name),
-});
-
-
-
+    res.json({
+      client_name: client.client_name,
+      logo_url: client.logo,
+      subscription: {
+        type: subscription.su_type,
+        start_date: subscription.su_start_date.toString('utf8'),
+        end_date: subscription.su_end_date.toString('utf8'),
+        duration: subscription.su_duration,
+        level_name: level.name,
+        max_sections: level.max_sections,
+        max_items: level.max_items
+      },
+      sections: displayedSections,
+      items,
+      hidden_sections: hiddenSections.map(s => s.se_name),
+    });
   } catch (err) {
     console.error("⚠️ خطأ في جلب المنيو:", err);
     res.status(500).json({ message: "حدث خطأ في السيرفر" });
