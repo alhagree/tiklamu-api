@@ -39,12 +39,13 @@ router.get("/:link_code", async (req, res) => {
 
     // 2. جلب الاشتراك الفعّال
     const [subRows] = await db.query(`
-      SELECT su_type, su_start_date, su_end_date, su_duration
+      SELECT su_type, su_start_date, su_end_date, su_duration, su_level_id
       FROM subscriptions
       WHERE su_client_id = ? AND su_status = 'active'
       ORDER BY su_start_date DESC
       LIMIT 1
     `, [client.cl_id]);
+
 
     if (subRows.length === 0)
       return res.status(403).json({
