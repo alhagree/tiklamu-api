@@ -1,3 +1,5 @@
+// ClientsController.js
+
 const db = require("../../shared/db");
 
 // ✅ جلب كل العملاء
@@ -25,13 +27,13 @@ exports.getById = async (req, res) => {
 
 // ✅ إضافة عميل جديد مع فحص القيم وطباعة body
 exports.add = async (req, res) => {
-  const { cl_name, cl_phone, cl_email } = req.body;
+  const { cl_name, cl_fullname, cl_phone, cl_email } = req.body;
 
   console.log("📥 بيانات العميل المستلمة:", req.body);
 
   // تحقق من القيم الأساسية
-  if (!cl_name || !cl_phone || !cl_email) {
-    return res.status(400).json({ error: "جميع الحقول مطلوبة: الاسم، الهاتف، البريد الإلكتروني" });
+  if (!cl_name || !cl_fullname || !cl_phone || !cl_email) {
+    return res.status(400).json({ error: "جميع الحقول مطلوبة: الاسم التجاري، الاسم الكامل، الهاتف، البريد الإلكتروني" });
   }
 
   try {
@@ -41,11 +43,11 @@ exports.add = async (req, res) => {
     const cl_status = 1; // أو "active" حسب النظام
 
     const [result] = await db.query(
-      `INSERT INTO clients 
-      (cl_name, cl_phone, cl_email, cl_password, cl_created_at, cl_is_active, cl_status) 
-      VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [cl_name, cl_phone, cl_email, cl_password, cl_created_at, cl_is_active, cl_status]
-    );
+  `INSERT INTO clients 
+   (cl_name, cl_fullname, cl_phone, cl_email, cl_password, cl_created_at, cl_is_active, cl_status) 
+   VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+  [cl_name, cl_fullname, cl_phone, cl_email, cl_password, cl_created_at, cl_is_active, cl_status]
+);
 
     res.json({ message: "✅ تمت الإضافة بنجاح", id: result.insertId });
   } catch (err) {
@@ -56,17 +58,17 @@ exports.add = async (req, res) => {
 
 // ✅ تعديل بيانات عميل
 exports.update = async (req, res) => {
-  const { cl_name, cl_phone, cl_email } = req.body;
+  const { cl_name, cl_fullname, cl_phone, cl_email } = req.body;
 
-  if (!cl_name || !cl_phone || !cl_email) {
+  if (!cl_name || !cl_fullname || !cl_phone || !cl_email) {
     return res.status(400).json({ error: "جميع الحقول مطلوبة للتعديل" });
   }
 
   try {
     await db.query(
-      "UPDATE clients SET cl_name = ?, cl_phone = ?, cl_email = ? WHERE cl_id = ?",
-      [cl_name, cl_phone, cl_email, req.params.id]
-    );
+  `UPDATE clients SET cl_name = ?, cl_fullname = ?, cl_phone = ?, cl_email = ? WHERE cl_id = ?`,
+  [cl_name, cl_fullname, cl_phone, cl_email, req.params.id]
+);
     res.json({ message: "✅ تم التعديل بنجاح" });
   } catch (err) {
     console.error("❌ خطأ أثناء التعديل:", err);
