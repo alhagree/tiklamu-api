@@ -1,4 +1,4 @@
-//backend\controllers\agent\SettingsController.js
+//SettingsController.js
 const db = require("../../shared/db");
 const imagekit = require("../../utils/imagekit");
 const path = require("path");
@@ -92,6 +92,15 @@ exports.getFullSettingsWithSubscription = async (req, res) => {
       level_max_sections: features.max_sections || 0,
       level_has_dashboard: features.has_dashboard === 1,
       level_can_customize: features.can_customize_logo === 1,
+        // 🔹 مزايا إضافية فعلية حسب جدول level_features
+  level_features: {
+    has_dashboard: features.has_dashboard === 1,
+    can_customize_logo: features.can_customize_logo === 1,
+    can_change_name: features.can_change_name === 1,
+    can_upload_background: features.can_upload_background === 1,
+    // أضف أي مفاتيح إضافية حسب ما هو متوفر في جدولك
+  },
+  
       section_count,
       item_count,
     });
