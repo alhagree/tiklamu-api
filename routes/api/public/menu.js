@@ -53,22 +53,39 @@ router.get("/:link_code", async (req, res) => {
         error_code: "subscription_inactive"
       });
 
-    const subscription = subRows[0];
+const subscription = subRows[0];
 const levelId = subscription.su_level_id || null;
 
-let level = { le_max_sections: 1000, le_max_items: 10000, le_name: "غير محددة" };
+let level = {
+  le_name: "غير محددة",
+  le_max_sections: 1000,
+  le_max_items: 10000
+};
 
 if (levelId) {
   const [levelRows] = await db.query(`
-    SELECT le_max_sections, le_max_items, le_name
-    FROM levels
-    WHERE le_id = ?
+    SELECT le_name FROM levels WHERE le_id = ?
   `, [levelId]);
 
-  if (levelRows.length > 0) {
-    level = levelRows[0];
-  }
+  const levelName = levelRows.length > 0 ? levelRows[0].le_name : "غير محددة";
+
+  const [featuresRows] = await db.query(`
+    SELECT lf_key, lf_value
+    FROM level_features
+    WHERE lf_level_id = ?
+  `, [levelId]);
+
+  const features = Object.fromEntries(
+    featuresRows.map(f => [f.lf_key, parseInt(f.lf_value)])
+  );
+
+  level = {
+    le_name: levelName,
+    le_max_sections: features.max_sections ?? 1000,
+    le_max_items: features.max_items ?? 10000
+  };
 }
+
 
     
     const end = new Date(subscription.su_end_date);
