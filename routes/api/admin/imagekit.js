@@ -3,12 +3,19 @@ const axios = require("axios");
 const express = require("express");
 const router = express.Router();
 const imagekit = require("../../../utils/imagekit");
+const IMAGEKIT_PRIVATE_KEY = imagekit.privateKey; // أو خزّنه في .env
 
 // 🔹 1. جلب معلومات الاستخدام
 router.get("/usage", async (req, res) => {
   try {
-    const usage = await imagekit.getUsageAsync(); // ✅ استخدام الدالة الجديدة
-    res.json(usage);
+    const response = await axios.get("https://api.imagekit.io/v1/api-usage", {
+      auth: {
+        username: IMAGEKIT_PRIVATE_KEY,
+        password: ""
+      }
+    });
+
+    res.json(response.data);
   } catch (err) {
     console.error("❌ فشل في جلب الاستخدام:", err);
     res.status(500).json({ error: "فشل في جلب معلومات الاستخدام" });
