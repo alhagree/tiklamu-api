@@ -14,20 +14,22 @@ router.get("/usage", async (req, res) => {
       return res.status(500).json({ error: "مفتاح ImageKit غير متوفر" });
     }
 
-    const base64 = Buffer.from(`${IMAGEKIT_PRIVATE_KEY}:`).toString("base64");
+    // التوثيق الصحيح
+    const base64Auth = Buffer.from(`${IMAGEKIT_PRIVATE_KEY}:`).toString("base64");
 
     const response = await axios.get("https://api.imagekit.io/v1/api-usage", {
       headers: {
-        Authorization: `Basic ${base64}`,
-      },
+        Authorization: `Basic ${base64Auth}`
+      }
     });
 
     res.json(response.data);
   } catch (err) {
-    console.error("❌ فشل في جلب الاستخدام:", err.message);
-    res.status(500).json({ error: "فشل في جلب معلومات الاستخدام" });
+    console.error("❌ فشل في جلب الاستخدام:", err.response?.data || err.message);
+    res.status(500).json({ error: "فشل في جلب معلومات الاستخدام", details: err.response?.data || err.message });
   }
 });
+
 
 // 🔹 2. جلب بيانات Vercel
 const vercelProjects = {
