@@ -64,3 +64,5 @@ router.get("/railway/:name", async (req, res) => {
     res.status(500).json({ error: "فشل في جلب بيانات Railway" });
   }
 });
+
+module.exports = router;
