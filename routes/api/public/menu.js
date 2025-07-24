@@ -122,20 +122,26 @@ router.get("/:link_code", async (req, res) => {
 
     // 4. جلب الأصناف
     const sectionIds = displayedSections.map(se => se.se_id);
-    const [itemsRaw] = sectionIds.length > 0
-      ? await db.query(`
-          SELECT it_id, it_se_id, it_name, it_price, it_description, it_image, it_available
-          FROM items
-          WHERE it_se_id IN (?) AND it_is_active = 1
-          ORDER BY it_id ASC
-        `, [sectionIds])
-      : [[]]; // لا يوجد أقسام
+    let items = [];
 
+    if (sectionIds.length > 0) {
+      const [rawItems] = await db.query(`
+        SELECT it_id, it_se_id, it_name, it_price, it_description, it_image, it_available
+        FROM items
+        WHERE it_se_id IN (?) AND it_is_active = 1
+        ORDER BY it_id ASC
+      `, [sectionIds]);
 
-    const items = itemsRaw.map(item => ({
-      ...item,
-      it_price: Number(item.it_price).toLocaleString('en-US'),
-    }));
+      const allowedItems =
+        level.max_items === "unlimited"
+          ? rawItems
+          : rawItems.slice(0, level.max_items);
+
+      items = allowedItems.map(item => ({
+        ...item,
+        it_price: Number(item.it_price).toLocaleString("en-US"),
+      }));
+    }
 
     // 5. الاستجابة النهائية
     res.json({
