@@ -7,13 +7,14 @@ const imagekit = require("../../../utils/imagekit");
 // 🔹 1. جلب معلومات الاستخدام
 router.get("/usage", async (req, res) => {
   try {
-    const usage = await imagekit.getUsage();
+    const usage = await imagekit.getUsageAsync(); // ✅ استخدام الدالة الجديدة
     res.json(usage);
   } catch (err) {
     console.error("❌ فشل في جلب الاستخدام:", err);
     res.status(500).json({ error: "فشل في جلب معلومات الاستخدام" });
   }
 });
+
 
 const vercelProjects = {
   tiklamu: process.env.VERCEL_PROJECT_ID_TIKLAMU,

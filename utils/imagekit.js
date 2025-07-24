@@ -7,4 +7,6 @@ const imagekit = new ImageKit({
   urlEndpoint: "https://ik.imagekit.io/idbeilkk4"
 });
 
+imagekit.getUsageAsync = util.promisify(imagekit.getUsage.bind(imagekit));
+
 module.exports = imagekit;
