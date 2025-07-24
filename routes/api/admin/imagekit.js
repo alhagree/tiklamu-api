@@ -5,30 +5,28 @@ const router = express.Router();
 const imagekit = require("../../../utils/imagekit");
 
 // 🔹 1. جلب معلومات الاستخدام من ImageKit
-router.get("/usage", async (req, res) => {
+router.get("/files", async (req, res) => {
   try {
     const IMAGEKIT_PRIVATE_KEY = process.env.IMAGEKIT_PRIVATE_KEY;
-
     if (!IMAGEKIT_PRIVATE_KEY) {
-      console.error("❌ IMAGEKIT_PRIVATE_KEY غير متوفر في البيئة");
       return res.status(500).json({ error: "مفتاح ImageKit غير متوفر" });
     }
 
-    // التوثيق الصحيح
-    const base64Auth = Buffer.from(`${IMAGEKIT_PRIVATE_KEY}:`).toString("base64");
+    const base64 = Buffer.from(`${IMAGEKIT_PRIVATE_KEY}:`).toString("base64");
 
-    const response = await axios.get("https://api.imagekit.io/v1/api-usage", {
+    const response = await axios.get("https://api.imagekit.io/v1/files", {
       headers: {
-        Authorization: `Basic ${base64Auth}`
+        Authorization: `Basic ${base64}`
       }
     });
 
     res.json(response.data);
   } catch (err) {
-    console.error("❌ فشل في جلب الاستخدام:", err.response?.data || err.message);
-    res.status(500).json({ error: "فشل في جلب معلومات الاستخدام", details: err.response?.data || err.message });
+    console.error("❌ فشل في جلب الملفات:", err.response?.data || err.message);
+    res.status(500).json({ error: "فشل في جلب الملفات", details: err.response?.data || err.message });
   }
 });
+
 
 
 // 🔹 2. جلب بيانات Vercel
