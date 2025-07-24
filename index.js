@@ -1,4 +1,5 @@
 //backend\index.js
+require("dotenv").config(); // يجب وضعها أولاً
 const express = require("express");
 const cors = require("cors");
 const app = express();

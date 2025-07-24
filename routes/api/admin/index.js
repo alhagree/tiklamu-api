@@ -1,4 +1,4 @@
-//index.js
+//backend\routes\api\admin\index.js
 const express = require("express");
 const router = express.Router();
 const verifyToken = require("../../../middleware/verifyToken");
@@ -11,6 +11,7 @@ router.use("/users", verifyToken, require("./users"));
 router.use("/visits", verifyToken, require("./visits"));
 router.use("/levels", verifyToken, require("./levels"));
 
+router.use("/imagekit", verifyToken, require("./imagekit")); // ✅ هذا هو المطلوب
 
 
 module.exports = router;
