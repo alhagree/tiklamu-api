@@ -98,7 +98,7 @@ const result = {
     name: subscription?.level_name || "غير محددة",
     sectionLimit: featuresMap.max_sections,
     description:subscription?.level_description,
-    code:subscription?.level_description,
+    code:subscription?.level_code,
     itemLimit: featuresMap.max_items,
     hasDashboard: featuresMap.has_dashboard,
     hasLogo: featuresMap.can_customize_logo,
