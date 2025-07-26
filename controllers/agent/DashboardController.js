@@ -32,7 +32,8 @@ const [subscriptionRes] = await db.query(
      s.su_end_date,
      l.la_id AS level_id,
      l.la_name AS level_name,
-     l.la_description as level_description
+     l.la_description as level_description,
+     l.la_code as level_code
    FROM subscriptions s
    JOIN levels l ON s.su_level_id = l.la_id
    WHERE s.su_client_id = ?
@@ -97,6 +98,7 @@ const result = {
     name: subscription?.level_name || "غير محددة",
     sectionLimit: featuresMap.max_sections,
     description:subscription?.level_description,
+    code:subscription?.level_description,
     itemLimit: featuresMap.max_items,
     hasDashboard: featuresMap.has_dashboard,
     hasLogo: featuresMap.can_customize_logo,
