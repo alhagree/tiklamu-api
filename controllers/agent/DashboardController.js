@@ -87,6 +87,7 @@ if (subscription?.level_id) {
 
 const result = {
   username: sectionClient[0]?.cl_name || "",
+  fullname : sectionClient[0]?.cl_fullname || "",
   sectionCount: sectionRes[0]?.count || 0,
   itemCount: itemRes[0]?.count || 0,
   subscriptionEnd: endDate,
