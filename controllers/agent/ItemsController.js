@@ -17,8 +17,18 @@ exports.createItem = async (req, res) => {
     let imageUrl = null;
 
 if (req.file) {
-  const originalName = req.file.originalname;
-  const fileName = `${Date.now()}-${originalName}`;
+const extension = path.extname(req.file.originalname); // مثل .jpg
+const now = new Date();
+const formattedDate =
+  now.getFullYear().toString() +
+  String(now.getMonth() + 1).padStart(2, "0") +
+  String(now.getDate()).padStart(2, "0") +
+  String(now.getHours()).padStart(2, "0") +
+  String(now.getMinutes()).padStart(2, "0") +
+  String(now.getSeconds()).padStart(2, "0");
+
+const fileName = `item-${formattedDate}${extension}`;
+
 
   const uploadedImage = await imagekit.upload({
     file: req.file.buffer,
@@ -122,9 +132,19 @@ exports.updateItem = async (req, res) => {
     let imageUrl = null;
 
 if (req.file) {
-  const originalName = req.file.originalname;
-  const extension = path.extname(originalName); // مثل: ".jpg"
-  const fileName = `${Date.now()}-${originalName}`;
+const extension = path.extname(req.file.originalname); // مثل .jpg
+const now = new Date();
+const formattedDate =
+  now.getFullYear().toString() +
+  String(now.getMonth() + 1).padStart(2, "0") +
+  String(now.getDate()).padStart(2, "0") +
+  String(now.getHours()).padStart(2, "0") +
+  String(now.getMinutes()).padStart(2, "0") +
+  String(now.getSeconds()).padStart(2, "0");
+
+const fileName = `item-${formattedDate}${extension}`;
+
+
 
   const uploadedImage = await imagekit.upload({
     file: req.file.buffer,
