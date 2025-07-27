@@ -16,14 +16,18 @@ exports.createItem = async (req, res) => {
 
     let imageUrl = null;
 
-    if (req.file) {
-      const uploadedImage = await imagekit.upload({
-        file: req.file.buffer,
-        fileName: `${Date.now()}-${req.file.originalname}`,
-        folder: `/menu_project/clients/${req.user.link_code}/items`,
-      });
-      imageUrl = uploadedImage.url;
-    }
+if (req.file) {
+  const originalName = req.file.originalname;
+  const fileName = `${Date.now()}-${originalName}`;
+
+  const uploadedImage = await imagekit.upload({
+    file: req.file.buffer,
+    fileName: fileName,
+    folder: `/menu_project/clients/${req.user.link_code}/items`,
+  });
+
+  imageUrl = fileName; // ✅ فقط الاسم
+}
 
     const sql = `
       INSERT INTO items (it_name, it_price, it_description, it_se_id, it_is_active, it_image)
@@ -117,14 +121,19 @@ exports.updateItem = async (req, res) => {
 
     let imageUrl = null;
 
-    if (req.file) {
-      const uploadedImage = await imagekit.upload({
-        file: req.file.buffer,
-        fileName: `${Date.now()}-${req.file.originalname}`,
-        folder: `/menu_project/clients/${req.user.link_code}/items`,
-      });
-      imageUrl = uploadedImage.url;
-    }
+if (req.file) {
+  const originalName = req.file.originalname;
+  const extension = path.extname(originalName); // مثل: ".jpg"
+  const fileName = `${Date.now()}-${originalName}`;
+
+  const uploadedImage = await imagekit.upload({
+    file: req.file.buffer,
+    fileName: fileName,
+    folder: `/menu_project/clients/${req.user.link_code}/items`,
+  });
+
+  imageUrl = fileName; // ✅ فقط الاسم مع الامتداد، بدون url كامل
+}
 
     let sql = `
       UPDATE items SET
