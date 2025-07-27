@@ -16,12 +16,26 @@ exports.addSection = async (req, res) => {
 
   try {
     if (req.file) {
+      const extension = path.extname(req.file.originalname);
+      const now = new Date();
+      const formattedDate =
+        now.getFullYear().toString() +
+        String(now.getMonth() + 1).padStart(2, "0") +
+        String(now.getDate()).padStart(2, "0") +
+        String(now.getHours()).padStart(2, "0") +
+        String(now.getMinutes()).padStart(2, "0") +
+        String(now.getSeconds()).padStart(2, "0");
+
+      const fileName = `section-${formattedDate}${extension}`;
+
       const uploadResult = await imagekit.upload({
         file: req.file.buffer,
-        fileName: Date.now() + path.extname(req.file.originalname),
-        folder: `/menu_project/clients/${link_code}/sections`
+        fileName: fileName,
+        folder: `/menu_project/clients/${link_code}/sections`,
+        useUniqueFileName: true,
       });
-      image = uploadResult.url;
+
+      image = path.basename(uploadResult.filePath); // ✅ فقط الاسم
     }
 
     const [result] = await db.query(
@@ -36,6 +50,7 @@ exports.addSection = async (req, res) => {
     res.status(500).json({ error: "فشل في إضافة القسم" });
   }
 };
+
 
 // ✅ جلب أقسام العميل
 exports.getSections = async (req, res) => {
@@ -93,22 +108,36 @@ exports.updateSection = async (req, res) => {
       return res.status(404).json({ error: "القسم غير موجود" });
     }
 
-    let imageUrl = rows[0].se_image;
+    let image = rows[0].se_image;
 
     if (req.file) {
+      const extension = path.extname(req.file.originalname);
+      const now = new Date();
+      const formattedDate =
+        now.getFullYear().toString() +
+        String(now.getMonth() + 1).padStart(2, "0") +
+        String(now.getDate()).padStart(2, "0") +
+        String(now.getHours()).padStart(2, "0") +
+        String(now.getMinutes()).padStart(2, "0") +
+        String(now.getSeconds()).padStart(2, "0");
+
+      const fileName = `section-${formattedDate}${extension}`;
+
       const uploadResult = await imagekit.upload({
         file: req.file.buffer,
-        fileName: Date.now() + path.extname(req.file.originalname),
+        fileName: fileName,
         folder: `/menu_project/clients/${req.user?.link_code}/sections`,
+        useUniqueFileName: true,
       });
-      imageUrl = uploadResult.url;
+
+      image = path.basename(uploadResult.filePath);
     }
 
     await db.query(
       `UPDATE sections 
        SET se_name = ?, se_description = ?, se_image = ?, se_is_active = ?
        WHERE se_id = ?`,
-      [name, description, imageUrl, active, id]
+      [name, description || "", image, active, id]
     );
 
     res.json({ message: "تم تحديث القسم بنجاح" });
