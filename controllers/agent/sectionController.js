@@ -19,7 +19,7 @@ exports.addSection = async (req, res) => {
       const uploadResult = await imagekit.upload({
         file: req.file.buffer,
         fileName: Date.now() + path.extname(req.file.originalname),
-        folder: `/menu_project/sections/${link_code}`
+        folder: `/menu_project/clients/${link_code}/sections`
       });
       image = uploadResult.url;
     }
@@ -99,7 +99,7 @@ exports.updateSection = async (req, res) => {
       const uploadResult = await imagekit.upload({
         file: req.file.buffer,
         fileName: Date.now() + path.extname(req.file.originalname),
-        folder: `/menu_project/sections/${req.user?.link_code}`,
+        folder: `/menu_project/clients/${req.user?.link_code}/sections`,
       });
       imageUrl = uploadResult.url;
     }

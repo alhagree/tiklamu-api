@@ -147,7 +147,7 @@ exports.updateSettings = async (req, res) => {
       const uploadedLogo = await imagekit.upload({
         file: req.files.logo[0].buffer,
         fileName: `${Date.now()}-${req.files.logo[0].originalname}`,
-        folder: `/menu_project/settings/${link_code}`,
+        folder: `/menu_project/clients/${link_code}/settings`,
       });
       logoUrl = uploadedLogo.url;
     }
@@ -156,7 +156,7 @@ exports.updateSettings = async (req, res) => {
       const uploadedBackground = await imagekit.upload({
         file: req.files.background[0].buffer,
         fileName: `${Date.now()}-${req.files.background[0].originalname}`,
-        folder: `/menu_project/settings/${link_code}`,
+        folder: `/menu_project/clients/${link_code}/settings`,
       });
       backgroundUrl = uploadedBackground.url;
     }

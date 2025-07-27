@@ -20,7 +20,7 @@ exports.createItem = async (req, res) => {
       const uploadedImage = await imagekit.upload({
         file: req.file.buffer,
         fileName: `${Date.now()}-${req.file.originalname}`,
-        folder: `/menu_project/items/${req.user.link_code}`,
+        folder: `/menu_project/clients/${req.user.link_code}/items`,
       });
       imageUrl = uploadedImage.url;
     }
@@ -121,7 +121,7 @@ exports.updateItem = async (req, res) => {
       const uploadedImage = await imagekit.upload({
         file: req.file.buffer,
         fileName: `${Date.now()}-${req.file.originalname}`,
-        folder: `/menu_project/items/${req.user.link_code}`,
+        folder: `/menu_project/clients/${req.user.link_code}/items`,
       });
       imageUrl = uploadedImage.url;
     }
