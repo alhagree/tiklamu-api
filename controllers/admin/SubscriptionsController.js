@@ -111,8 +111,10 @@ exports.add = async (req, res) => {
           color: { dark: "#000", light: "#fff" }
         });
 
+        // تحديد اسم الصورة (بامتداد jpg)
+        const imageName = `barcode_${linkCode}.jpg`;
+
         // رفع الباركود إلى ImageKit
-        const imageName = `barcode_${linkCode}.png`;
         const uploadResponse = await imagekit.upload({
           file: qrBuffer,
           fileName: imageName,
@@ -120,12 +122,15 @@ exports.add = async (req, res) => {
           overwriteFile: true
         });
 
+        // الاحتفاظ فقط بالاسم (وليس الرابط الكامل)
+        const barcodeFilename = path.basename(uploadResponse.filePath);
+
         // حفظ رابط الباركود في settings
         await db.query(`
           INSERT INTO settings (st_cl_id, st_barcode) 
           VALUES (?, ?) 
           ON DUPLICATE KEY UPDATE st_barcode = ?
-        `, [su_client_id, uploadResponse.url, uploadResponse.url]);
+        `, [su_client_id, barcodeFilename, barcodeFilename]);
       }
     }
 

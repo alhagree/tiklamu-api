@@ -37,6 +37,17 @@ router.get("/:link_code", async (req, res) => {
         error_code: "account_inactive"
       });
 
+      
+      // ✅ تسجيل زيارة الزبون بعد التأكد من صلاحية الرابط
+await db.query(`
+  INSERT INTO visits (vs_us_link_code, vs_ip_address, vs_user_agent)
+  VALUES (?, ?, ?)
+`, [
+  linkCode,
+  req.headers["x-forwarded-for"] || req.socket.remoteAddress || null,
+  req.headers["user-agent"] || ""
+]);
+
     // 2. جلب الاشتراك الفعّال
     const [subRows] = await db.query(`
       SELECT su_type, su_start_date, su_end_date, su_duration, su_level_id
