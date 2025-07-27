@@ -140,28 +140,44 @@ exports.updateSettings = async (req, res) => {
   try {
     const { cl_name, cl_phone } = req.body;
 
-    let logoUrl = null;
-    let backgroundUrl = null;
+    let logoFilename = null;
+    let backgroundFilename = null;
 
+    // ⏱ تنسيق اسم الصورة بالتاريخ والوقت
+    const now = new Date();
+    const formattedDate =
+      now.getFullYear().toString() +
+      String(now.getMonth() + 1).padStart(2, "0") +
+      String(now.getDate()).padStart(2, "0") +
+      String(now.getHours()).padStart(2, "0") +
+      String(now.getMinutes()).padStart(2, "0") +
+      String(now.getSeconds()).padStart(2, "0");
+
+    // ✅ رفع الشعار
     if (req.files?.logo?.[0]) {
+      const ext = path.extname(req.files.logo[0].originalname); // مثال: .jpg
+      const logoName = `logo-${formattedDate}${ext}`;
       const uploadedLogo = await imagekit.upload({
         file: req.files.logo[0].buffer,
-        fileName: `${Date.now()}-${req.files.logo[0].originalname}`,
+        fileName: logoName,
         folder: `/menu_project/clients/${link_code}/settings`,
       });
-      logoUrl = uploadedLogo.url;
+      logoFilename = path.basename(uploadedLogo.filePath); // حفظ فقط الاسم
     }
 
+    // ✅ رفع الخلفية
     if (req.files?.background?.[0]) {
+      const ext = path.extname(req.files.background[0].originalname); // مثال: .jpg
+      const bgName = `background-${formattedDate}${ext}`;
       const uploadedBackground = await imagekit.upload({
         file: req.files.background[0].buffer,
-        fileName: `${Date.now()}-${req.files.background[0].originalname}`,
+        fileName: bgName,
         folder: `/menu_project/clients/${link_code}/settings`,
       });
-      backgroundUrl = uploadedBackground.url;
-    } 
+      backgroundFilename = path.basename(uploadedBackground.filePath); // حفظ فقط الاسم
+    }
 
-    // تحديث جدول clients
+    // ✅ تحديث جدول clients
     const updateClientSql = `
       UPDATE clients
       SET cl_name = ?, cl_phone = ?
@@ -169,21 +185,22 @@ exports.updateSettings = async (req, res) => {
     `;
     await db.query(updateClientSql, [cl_name, cl_phone, clientId]);
 
-    // تحديث جدول settings
+    // ✅ تحديث جدول settings
     let updateSettingsSql = `UPDATE settings SET `;
     const settingsParams = [];
-    if (logoUrl) {
+
+    if (logoFilename) {
       updateSettingsSql += `st_logo = ?, `;
-      settingsParams.push(logoUrl);
-    }
-    if (backgroundUrl) {
-      updateSettingsSql += `st_background = ?, `;
-      settingsParams.push(backgroundUrl);
+      settingsParams.push(logoFilename);
     }
 
-    // فقط إذا وُجدت صور نُحدث جدول الإعدادات
+    if (backgroundFilename) {
+      updateSettingsSql += `st_background = ?, `;
+      settingsParams.push(backgroundFilename);
+    }
+
     if (settingsParams.length > 0) {
-      updateSettingsSql = updateSettingsSql.slice(0, -2); // إزالة الفاصلة الأخيرة
+      updateSettingsSql = updateSettingsSql.slice(0, -2); // حذف الفاصلة الأخيرة
       updateSettingsSql += ` WHERE st_cl_id = ?`;
       settingsParams.push(clientId);
       await db.query(updateSettingsSql, settingsParams);
