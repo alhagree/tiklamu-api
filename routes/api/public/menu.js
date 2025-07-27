@@ -26,7 +26,7 @@ router.get("/:link_code", async (req, res) => {
     if (userRows.length === 0)
       return res.status(404).json({
         message: "العميل المطلوب لا تتوفر بياناته.",
-        error_code: "client_not_found"
+        error_code: "client_not_found",
       });
 
     const client = userRows[0];
@@ -34,44 +34,53 @@ router.get("/:link_code", async (req, res) => {
     if (client.US_ACTIVE == 0 || client.CL_ACTIVE == 0)
       return res.status(403).json({
         message: "تم تعطيل الحساب، يرجى التواصل مع الادارة لتشغيله",
-        error_code: "account_inactive"
+        error_code: "account_inactive",
       });
 
-      // ✅ تسجيل زيارة الزبون بعد التأكد من صلاحية الرابط
-      const ipAddress = req.headers["x-forwarded-for"] || req.socket.remoteAddress || null;
-      const userAgent = req.headers["user-agent"] || "";
+    // ✅ تسجيل زيارة الزبون بعد التأكد من صلاحية الرابط
+    const ipAddress =
+      req.headers["x-forwarded-for"] || req.socket.remoteAddress || null;
+    const userAgent = req.headers["user-agent"] || "";
 
-      // التحقق من عدم وجود زيارة خلال آخر دقيقة
-      const [existingVisit] = await db.query(`
+    // التحقق من عدم وجود زيارة خلال آخر دقيقة
+    const [existingVisit] = await db.query(
+      `
         SELECT COUNT(*) as count
         FROM visits
         WHERE vs_us_link_code = ?
           AND vs_ip_address = ?
           AND vs_visit_time > NOW() - INTERVAL 1 MINUTE
-      `, [linkCode, ipAddress]);
+      `,
+      [linkCode, ipAddress]
+    );
 
-      if (existingVisit[0].count === 0) {
-        await db.query(`
+    if (existingVisit[0].count === 0) {
+      await db.query(
+        `
           INSERT INTO visits (vs_us_link_code, vs_ip_address, vs_user_agent)
           VALUES (?, ?, ?)
-        `, [linkCode, ipAddress, userAgent]);
-      }
-
+        `,
+        [linkCode, ipAddress, userAgent]
+      );
+    }
 
     // 2. جلب الاشتراك الفعّال
-    const [subRows] = await db.query(`
+    const [subRows] = await db.query(
+      `
       SELECT su_type, su_start_date, su_end_date, su_duration, su_level_id
       FROM subscriptions
       WHERE su_client_id = ? AND su_status = 'active'
       ORDER BY su_start_date DESC
       LIMIT 1
-    `, [client.cl_id]);
-
+    `,
+      [client.cl_id]
+    );
 
     if (subRows.length === 0)
       return res.status(403).json({
-        message: "تم ايقاف الاشتراك مؤقتا من قبل الادارة، يرجى التواصل لاعادة التفعيل",
-        error_code: "subscription_inactive"
+        message:
+          "تم ايقاف الاشتراك مؤقتا من قبل الادارة، يرجى التواصل لاعادة التفعيل",
+        error_code: "subscription_inactive",
       });
 
     const subscription = subRows[0];
@@ -80,35 +89,45 @@ router.get("/:link_code", async (req, res) => {
     let level = {
       name: "غير محددة",
       max_sections: 1000,
-      max_items: 10000
+      max_items: 10000,
     };
 
     if (levelId) {
       // جلب اسم الخطة الحقيقي
-      const [levelRows] = await db.query(`
+      const [levelRows] = await db.query(
+        `
         SELECT la_name FROM levels WHERE la_id = ?
-      `, [levelId]);
+      `,
+        [levelId]
+      );
 
-      const levelName = levelRows.length > 0 ? levelRows[0].la_name : "غير محددة";
+      const levelName =
+        levelRows.length > 0 ? levelRows[0].la_name : "غير محددة";
 
       // جلب مزايا الخطة
-      const [featuresRows] = await db.query(`
+      const [featuresRows] = await db.query(
+        `
         SELECT lf_key, lf_value
         FROM level_features
         WHERE lf_level_id = ?
-      `, [levelId]);
+      `,
+        [levelId]
+      );
 
       const features = Object.fromEntries(
-        featuresRows.map(f => [f.lf_key, f.lf_value === "unlimited" ? "unlimited" : parseInt(f.lf_value)])
+        featuresRows.map((f) => [
+          f.lf_key,
+          f.lf_value === "unlimited" ? "unlimited" : parseInt(f.lf_value),
+        ])
       );
 
       level = {
         name: levelName,
         max_sections: features.max_sections ?? 1000,
-        max_items: features.max_items ?? 10000
+        max_items: features.max_items ?? 10000,
       };
     }
-    
+
     const end = new Date(subscription.su_end_date);
     const today = new Date();
 
@@ -120,45 +139,53 @@ router.get("/:link_code", async (req, res) => {
     if (today > graceLimit) {
       return res.status(403).json({
         message: "انتهت مدة الاشتراك، تواصل مع الادارة للتجديد",
-        error_code: "subscription_expired"
+        error_code: "subscription_expired",
       });
     }
 
     // 3. جلب كل الأقسام الفعالة
-    const [allSections] = await db.query(`
+    const [allSections] = await db.query(
+      `
       SELECT se_id, se_name, se_image
       FROM sections
       WHERE se_client_id = ? AND se_is_active = 1
       ORDER BY se_id ASC
-    `, [client.cl_id]);
+    `,
+      [client.cl_id]
+    );
 
     // قسمها حسب العدد المسموح
-    const displayedSections = level.max_sections === "unlimited"
-      ? allSections
-      : allSections.slice(0, level.max_sections);
+    const displayedSections =
+      level.max_sections === "unlimited"
+        ? allSections
+        : allSections.slice(0, level.max_sections);
 
-    const hiddenSections = level.max_sections === "unlimited"
-      ? []
-      : allSections.slice(level.max_sections);
+    const hiddenSections =
+      level.max_sections === "unlimited"
+        ? []
+        : allSections.slice(level.max_sections);
 
     // 4. جلب الأصناف
-    const sectionIds = displayedSections.map(se => se.se_id);
+    const sectionIds = displayedSections.map((se) => se.se_id);
     let items = [];
 
     if (sectionIds.length > 0) {
-      const [rawItems] = await db.query(`
+      const [rawItems] = await db.query(
+        `
         SELECT it_id, it_se_id, it_name, it_price, it_description, it_image, it_available
         FROM items
         WHERE it_se_id IN (?) AND it_is_active = 1
         ORDER BY it_id ASC
-      `, [sectionIds]);
+      `,
+        [sectionIds]
+      );
 
       const allowedItems =
         level.max_items === "unlimited"
           ? rawItems
           : rawItems.slice(0, level.max_items);
 
-      items = allowedItems.map(item => ({
+      items = allowedItems.map((item) => ({
         ...item,
         it_price: Number(item.it_price).toLocaleString("en-US"),
       }));
@@ -170,16 +197,16 @@ router.get("/:link_code", async (req, res) => {
       logo_url: client.logo,
       subscription: {
         type: subscription.su_type,
-        start_date: subscription.su_start_date.toString('utf8'),
-        end_date: subscription.su_end_date.toString('utf8'),
+        start_date: subscription.su_start_date.toString("utf8"),
+        end_date: subscription.su_end_date.toString("utf8"),
         duration: subscription.su_duration,
         level_name: level.name,
         max_sections: level.max_sections,
-        max_items: level.max_items
+        max_items: level.max_items,
       },
       sections: displayedSections,
       items,
-      hidden_sections: hiddenSections.map(s => s.se_name),
+      hidden_sections: hiddenSections.map((s) => s.se_name),
     });
   } catch (err) {
     console.error("⚠️ خطأ في جلب المنيو:", err);
