@@ -37,16 +37,26 @@ router.get("/:link_code", async (req, res) => {
         error_code: "account_inactive"
       });
 
-      
       // ✅ تسجيل زيارة الزبون بعد التأكد من صلاحية الرابط
-await db.query(`
-  INSERT INTO visits (vs_us_link_code, vs_ip_address, vs_user_agent)
-  VALUES (?, ?, ?)
-`, [
-  linkCode,
-  req.headers["x-forwarded-for"] || req.socket.remoteAddress || null,
-  req.headers["user-agent"] || ""
-]);
+      const ipAddress = req.headers["x-forwarded-for"] || req.socket.remoteAddress || null;
+      const userAgent = req.headers["user-agent"] || "";
+
+      // التحقق من عدم وجود زيارة خلال آخر دقيقة
+      const [existingVisit] = await db.query(`
+        SELECT COUNT(*) as count
+        FROM visits
+        WHERE vs_us_link_code = ?
+          AND vs_ip_address = ?
+          AND vs_visit_time > NOW() - INTERVAL 30 SECOND
+      `, [linkCode, ipAddress]);
+
+      if (existingVisit[0].count === 0) {
+        await db.query(`
+          INSERT INTO visits (vs_us_link_code, vs_ip_address, vs_user_agent)
+          VALUES (?, ?, ?)
+        `, [linkCode, ipAddress, userAgent]);
+      }
+
 
     // 2. جلب الاشتراك الفعّال
     const [subRows] = await db.query(`
