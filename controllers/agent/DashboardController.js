@@ -121,7 +121,7 @@ if (!linkCode) {
 
 const [visits] = await db.query(`
   SELECT 
-    DATE(vs_visit_time, INTERVAL 3 HOUR) AS visit_date,
+    DATE(DATE_ADD(vs_visit_time, INTERVAL 3 HOUR)) AS visit_date,
     COUNT(*) AS visit_count
   FROM visits
   WHERE vs_us_link_code COLLATE utf8mb4_general_ci = ?
