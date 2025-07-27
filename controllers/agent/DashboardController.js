@@ -107,27 +107,34 @@ const result = {
 };
 
 // 🟦 عدد الزوار لكل يوم لآخر 7 أيام
-const [visitsByDay] = await db.query(
-  `SELECT 
-     DATE(vs_visit_time) AS visit_date, 
-     COUNT(*) AS visit_count
-   FROM visits 
-   WHERE vs_us_link_code = (
-     SELECT us.us_link_code 
-     FROM us_users us 
-     WHERE us.us_client_id = ?
-     LIMIT 1
-   )
-   GROUP BY DATE(vs_visit_time)
-   ORDER BY visit_date DESC
-   LIMIT 7`,
+
+// جلب link_code من جدول us_users
+const [userLink] = await db.query(
+  "SELECT us_link_code FROM us_users WHERE us_client_id = ? LIMIT 1",
   [client_id]
 );
 
-// ترتيب تصاعدي للتواريخ (الأقدم أولًا)
-visitsByDay.reverse();
+const linkCode = userLink[0]?.us_link_code || null;
+if (!linkCode) {
+  return res.status(404).json({ error: "لم يتم العثور على رابط العميل" });
+}
 
-result.visitStats = visitsByDay;
+const [visits] = await db.query(`
+  SELECT 
+    DATE(vs_visit_time) AS visit_date,
+    COUNT(*) AS visit_count
+  FROM visits
+  WHERE vs_us_link_code COLLATE utf8mb4_general_ci = ?
+  GROUP BY visit_date
+  ORDER BY visit_date DESC
+  LIMIT 7
+`, [linkCode]);
+
+
+// ترتيب تصاعدي للتواريخ (الأقدم أولًا)
+visits.reverse();
+
+result.visitStats = visits;
 
 return res.json(result);
 
