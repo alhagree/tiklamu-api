@@ -36,7 +36,7 @@ const fileName = `item-${formattedDate}${extension}`;
     folder: `/menu_project/clients/${req.user.link_code}/items`,
   });
 
-  imageUrl = fileName; // ✅ فقط الاسم
+imageUrl = path.basename(uploadedImage.filePath);
 }
 
     const sql = `
@@ -152,7 +152,7 @@ const fileName = `item-${formattedDate}${extension}`;
     folder: `/menu_project/clients/${req.user.link_code}/items`,
   });
 
-  imageUrl = fileName; // ✅ فقط الاسم مع الامتداد، بدون url كامل
+  imageUrl = path.basename(uploadedImage.filePath);
 }
 
     let sql = `
