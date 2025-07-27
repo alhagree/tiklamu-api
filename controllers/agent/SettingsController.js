@@ -159,7 +159,7 @@ exports.updateSettings = async (req, res) => {
         folder: `/menu_project/clients/${link_code}/settings`,
       });
       backgroundUrl = uploadedBackground.url;
-    }
+    } 
 
     // تحديث جدول clients
     const updateClientSql = `
