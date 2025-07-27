@@ -47,7 +47,7 @@ router.get("/:link_code", async (req, res) => {
         FROM visits
         WHERE vs_us_link_code = ?
           AND vs_ip_address = ?
-          AND vs_visit_time > NOW() - INTERVAL 30 SECOND
+          AND vs_visit_time > NOW() - INTERVAL 1 MINUTE
       `, [linkCode, ipAddress]);
 
       if (existingVisit[0].count === 0) {
