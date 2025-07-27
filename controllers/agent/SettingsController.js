@@ -24,7 +24,6 @@ exports.getSettings = async (req, res) => {
 };
 
 // ✅ تحديث الإعدادات
-// ✅ تحديث الإعدادات
 exports.updateSettings = async (req, res) => {
   const clientId = req.user.id;
   const link_code = req.user.link_code;
