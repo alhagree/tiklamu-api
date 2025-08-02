@@ -9,6 +9,7 @@ const path = require("path");
 const allowedOrigins = [
   "http://localhost:8080",
   "http://localhost:8081",
+  "http://localhost:8082",
   "https://menu-agent.vercel.app",
   "https://menu-client-puce.vercel.app",
   "https://menu-admin-nu.vercel.app",
