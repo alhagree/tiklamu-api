@@ -3,6 +3,9 @@ const express = require("express");
 const router = express.Router();
 const controller = require("../../../controllers/admin/SubscribeRequestsController");
 
+const verifyToken = require("../../../middleware/verifyToken");
+router.use(verifyToken);
+
 router.get("/", controller.getAll);
 router.put("/:id", controller.updateStatus);
 
