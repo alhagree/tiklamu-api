@@ -4,7 +4,7 @@ const db = require("../../../shared/db");
 
 // 📨 استقبال طلب اشتراك جديد
 router.post("/", async (req, res) => {
-  const { full_name, phone, project_name, notes } = req.body;
+  const { full_name, phone, project_name, plane_name, notes } = req.body;
 
   // تحقق من الحقول المطلوبة
   if (!full_name || !phone || !project_name) {
@@ -19,10 +19,11 @@ router.post("/", async (req, res) => {
         sr_full_name,
         sr_phone,
         sr_project_name,
+        sr_plan,
         sr_notes
-      ) VALUES (?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?)
     `;
-    const values = [full_name, phone, project_name, notes || null];
+    const values = [full_name, phone, project_name, plane_name, notes || null];
     await db.query(sql, values);
 
     res.status(200).json({ message: "تم حفظ الطلب بنجاح." });
