@@ -10,7 +10,7 @@ router.use("/dashboard", verifyToken, require("./dashboard"));
 router.use("/users", verifyToken, require("./users"));
 router.use("/visits", verifyToken, require("./visits"));
 router.use("/levels", verifyToken, require("./levels"));
-router.use("/subscribe-requests", require("./subscribeRequests"));
+router.use("/subscribe-requests", verifyToken, require("./subscribeRequests"));
 
 router.use("/imagekit", verifyToken, require("./imagekit")); // ✅ هذا هو المطلوب
 
