@@ -1,7 +1,5 @@
 const db = require("../../shared/db");
 
-const db = require("../../shared/db");
-
 exports.getStats = async (req, res) => {
   try {
     const stats = {
