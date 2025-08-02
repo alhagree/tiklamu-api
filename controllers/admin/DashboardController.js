@@ -35,7 +35,7 @@ exports.getStats = async (req, res) => {
     stats.inactiveClients = inactive;
 
     // الاشتراكات
-    const suCondition = clientId ? " AND su_cl_id = ?" : "";
+    const suCondition = clientId ? " AND su_client_id = ?" : "";
     const suParams = clientId ? [clientId] : [];
 
     const [[{ subs }]] = await db.query(
