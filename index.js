@@ -12,7 +12,7 @@ const allowedOrigins = [
   "https://menu-admin-nu.vercel.app",
   "https://menu.tiklamu.com",
   "https://agent.tiklamu.com",
-  "https://tiklamu.com/menu",
+  "https://tiklamu.com",
 ];
 
 app.use(
