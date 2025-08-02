@@ -10,61 +10,90 @@ exports.getStats = async (req, res) => {
       trialSubscriptions: 0,
       firstSubscriptions: 0,
       renewSubscriptions: 0,
+      totalSubscribeRequests: 0,
+      newSubscribeRequests: 0,
       clientsPerDay: {
         days: [],
         counts: [],
       },
     };
 
-    const [result1] = await db.query("SELECT COUNT(*) AS total FROM clients");
-    stats.totalClients = result1[0].total;
+    // العملاء
+    const [[{ total }]] = await db.query(
+      "SELECT COUNT(*) AS total FROM clients"
+    );
+    const [[{ active }]] = await db.query(
+      "SELECT COUNT(*) AS active FROM clients WHERE cl_status = 1"
+    );
+    const [[{ inactive }]] = await db.query(
+      "SELECT COUNT(*) AS inactive FROM clients WHERE cl_status = 0"
+    );
 
-    const [result2] = await db.query("SELECT COUNT(*) AS active FROM clients WHERE cl_status = 1");
-    stats.activeClients = result2[0].active;
+    // الاشتراكات
+    const [[{ subs }]] = await db.query(
+      "SELECT COUNT(*) AS subs FROM subscriptions WHERE su_end_date > NOW()"
+    );
+    const [[{ trial }]] = await db.query(
+      "SELECT COUNT(*) AS trial FROM subscriptions WHERE su_type = 'trial'"
+    );
+    const [[{ first }]] = await db.query(
+      "SELECT COUNT(*) AS first FROM subscriptions WHERE su_type = 'first'"
+    );
+    const [[{ renew }]] = await db.query(
+      "SELECT COUNT(*) AS renew FROM subscriptions WHERE su_type = 'renew'"
+    );
 
-    const [result3] = await db.query("SELECT COUNT(*) AS inactive FROM clients WHERE cl_status = 0");
-    stats.inactiveClients = result3[0].inactive;
+    // طلبات الاشتراك
+    const [[{ totalRequests }]] = await db.query(
+      "SELECT COUNT(*) AS totalRequests FROM subscribe_requests"
+    );
+    const [[{ newRequests }]] = await db.query(
+      "SELECT COUNT(*) AS newRequests FROM subscribe_requests WHERE sr_status = 1"
+    );
 
-    const [result4] = await db.query("SELECT COUNT(*) AS subs FROM subscriptions WHERE su_end_date > NOW()");
-    stats.activeSubscriptions = result4[0].subs;
+    // تخزين القيم
+    stats.totalClients = total;
+    stats.activeClients = active;
+    stats.inactiveClients = inactive;
+    stats.activeSubscriptions = subs;
+    stats.trialSubscriptions = trial;
+    stats.firstSubscriptions = first;
+    stats.renewSubscriptions = renew;
+    stats.totalSubscribeRequests = totalRequests;
+    stats.newSubscribeRequests = newRequests;
 
-    const [resTrial] = await db.query("SELECT COUNT(*) AS trial FROM subscriptions WHERE su_type = 'trial'");
-    stats.trialSubscriptions = resTrial[0].trial;
-
-    const [resFirst] = await db.query("SELECT COUNT(*) AS first FROM subscriptions WHERE su_type = 'first'");
-    stats.firstSubscriptions = resFirst[0].first;
- 
-    const [resRenew] = await db.query("SELECT COUNT(*) AS renew FROM subscriptions WHERE su_type = 'renew'");
-    stats.renewSubscriptions = resRenew[0].renew;
-
-    // الرسم البياني الأسبوعي للعملاء
-    const [result5] = await db.query(`
-      SELECT DATE(cl_created_at) as date, COUNT(*) as count
+    // الرسم البياني للعملاء
+    const [dailyCounts] = await db.query(`
+      SELECT DATE(cl_created_at) AS date, COUNT(*) AS count
       FROM clients
       WHERE cl_created_at >= DATE_SUB(CURDATE(), INTERVAL 6 DAY)
       GROUP BY DATE(cl_created_at)
       ORDER BY DATE(cl_created_at)
     `);
 
-    const daysMap = ['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
-    const now = new Date();
+    const daysMap = [
+      "الأحد",
+      "الاثنين",
+      "الثلاثاء",
+      "الأربعاء",
+      "الخميس",
+      "الجمعة",
+      "السبت",
+    ];
+    const today = new Date();
 
     for (let i = 6; i >= 0; i--) {
       const date = new Date();
-      date.setDate(now.getDate() - i);
+      date.setDate(today.getDate() - i);
       const dateStr = date.toISOString().split("T")[0];
 
-      const found = result5.find(row => {
-        const rowDate = new Date(row.date);
-        return rowDate.toISOString().split("T")[0] === dateStr;
-      });
+      const match = dailyCounts.find((row) => row.date === dateStr);
 
       stats.clientsPerDay.days.push(daysMap[date.getDay()]);
-      stats.clientsPerDay.counts.push(found ? found.count : 0);
+      stats.clientsPerDay.counts.push(match ? match.count : 0);
     }
 
     return res.json(stats);
-
   } catch (err) {
     console.error("Dashboard error:", err);
     return res.status(500).json({ error: "خطأ في الخادم" });
