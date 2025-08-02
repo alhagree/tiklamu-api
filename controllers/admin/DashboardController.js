@@ -106,8 +106,8 @@ exports.getStats = async (req, res) => {
 
       const match = visitRows.find((row) => row.visit_date === dateStr);
 
-      stats.clientsPerDay.days.push(daysMap[date.getDay()]);
-      stats.clientsPerDay.counts.push(match ? match.count : 0);
+      stats.visitsPerDay.days.push(daysMap[date.getDay()]);
+      stats.visitsPerDay.counts.push(match ? match.count : 0);
     }
 
     return res.json(stats);
