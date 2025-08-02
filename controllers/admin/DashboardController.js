@@ -68,17 +68,17 @@ exports.getStats = async (req, res) => {
     if (clientId) {
       const [rows] = await db.query(
         `
-        SELECT DATE(vs_visit_time) AS date, COUNT(*) AS count
-        FROM visits
-        WHERE vs_us_link_code = (
-          SELECT us_link_code FROM us_users WHERE us_client_id = ? LIMIT 1
-        ) AND vs_visit_time >= DATE_SUB(CURDATE(), INTERVAL 6 DAY)
-        GROUP BY DATE(vs_visit_time)
-        ORDER BY DATE(vs_visit_time)
-      `,
+  SELECT DATE(DATE_ADD(vs_visit_time, INTERVAL 3 HOUR)) AS date, COUNT(*) AS count
+  FROM visits
+  WHERE vs_us_link_code COLLATE utf8mb4_general_ci = (
+    SELECT us_link_code COLLATE utf8mb4_general_ci FROM us_users WHERE us_client_id = ? LIMIT 1
+  )
+  AND vs_visit_time >= DATE_SUB(CURDATE(), INTERVAL 6 DAY)
+  GROUP BY DATE(vs_visit_time)
+  ORDER BY DATE(vs_visit_time)
+  `,
         [clientId]
       );
-
       visitRows = rows;
     }
 
