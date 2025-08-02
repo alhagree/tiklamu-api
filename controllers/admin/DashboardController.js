@@ -48,7 +48,7 @@ exports.getStats = async (req, res) => {
       "SELECT COUNT(*) AS totalRequests FROM subscription_requests"
     );
     const [[{ newRequests }]] = await db.query(
-      "SELECT COUNT(*) AS newRequests FROM subscription_requests WHERE sl_status = 1"
+      "SELECT COUNT(*) AS newRequests FROM subscription_requests WHERE sr_status = 1"
     );
 
     // تخزين القيم
