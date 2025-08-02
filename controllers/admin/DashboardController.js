@@ -12,7 +12,7 @@ exports.getStats = async (req, res) => {
       renewSubscriptions: 0,
       totalSubscribeRequests: 0,
       newSubscribeRequests: 0,
-      clientsPerDay: {
+      visitsPerDay: {
         days: [],
         counts: [],
       },
