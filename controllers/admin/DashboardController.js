@@ -104,7 +104,7 @@ exports.getStats = async (req, res) => {
       date.setDate(today.getDate() - i);
       const dateStr = date.toISOString().split("T")[0];
 
-      const match = visitRows.find((row) => row.date === dateStr);
+      const match = visitRows.find((row) => row.visit_date === dateStr);
 
       stats.clientsPerDay.days.push(daysMap[date.getDay()]);
       stats.clientsPerDay.counts.push(match ? match.count : 0);
