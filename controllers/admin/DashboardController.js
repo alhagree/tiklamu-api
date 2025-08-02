@@ -12,15 +12,13 @@ exports.getStats = async (req, res) => {
       renewSubscriptions: 0,
       totalSubscribeRequests: 0,
       newSubscribeRequests: 0,
-      visitsPerDay: {
+      clientsPerDay: {
         days: [],
         counts: [],
       },
     };
 
-    const clientId = req.query.clientId;
-
-    // العملاء (لا تتغير حسب clientId)
+    // بطاقات الويدجت (إحصائيات عامة)
     const [[{ total }]] = await db.query(
       "SELECT COUNT(*) AS total FROM clients"
     );
@@ -30,73 +28,59 @@ exports.getStats = async (req, res) => {
     const [[{ inactive }]] = await db.query(
       "SELECT COUNT(*) AS inactive FROM clients WHERE cl_status = 0"
     );
+
+    const [[{ subs }]] = await db.query(
+      "SELECT COUNT(*) AS subs FROM subscriptions WHERE su_end_date > NOW()"
+    );
+    const [[{ trial }]] = await db.query(
+      "SELECT COUNT(*) AS trial FROM subscriptions WHERE su_type = 'trial'"
+    );
+    const [[{ first }]] = await db.query(
+      "SELECT COUNT(*) AS first FROM subscriptions WHERE su_type = 'first'"
+    );
+    const [[{ renew }]] = await db.query(
+      "SELECT COUNT(*) AS renew FROM subscriptions WHERE su_type = 'renew'"
+    );
+
+    const [[{ totalRequests }]] = await db.query(
+      "SELECT COUNT(*) AS totalRequests FROM subscription_requests"
+    );
+    const [[{ newRequests }]] = await db.query(
+      "SELECT COUNT(*) AS newRequests FROM subscription_requests WHERE sr_status = 1"
+    );
+
+    // تخزين القيم
     stats.totalClients = total;
     stats.activeClients = active;
     stats.inactiveClients = inactive;
-
-    // الاشتراكات
-    const suCondition = clientId ? " AND su_client_id = ?" : "";
-    const suParams = clientId ? [clientId] : [];
-
-    const [[{ subs }]] = await db.query(
-      `SELECT COUNT(*) AS subs FROM subscriptions WHERE su_end_date > NOW() ${suCondition}`,
-      suParams
-    );
     stats.activeSubscriptions = subs;
-
-    const [[{ trial }]] = await db.query(
-      `SELECT COUNT(*) AS trial FROM subscriptions WHERE su_type = 'trial' ${suCondition}`,
-      suParams
-    );
     stats.trialSubscriptions = trial;
-
-    const [[{ first }]] = await db.query(
-      `SELECT COUNT(*) AS first FROM subscriptions WHERE su_type = 'first' ${suCondition}`,
-      suParams
-    );
     stats.firstSubscriptions = first;
-
-    const [[{ renew }]] = await db.query(
-      `SELECT COUNT(*) AS renew FROM subscriptions WHERE su_type = 'renew' ${suCondition}`,
-      suParams
-    );
     stats.renewSubscriptions = renew;
-
-    // طلبات الاشتراك
-    const srCondition = clientId ? " WHERE sr_client_id = ?" : "";
-    const srParams = clientId ? [clientId] : [];
-
-    const [[{ totalRequests }]] = await db.query(
-      `SELECT COUNT(*) AS totalRequests FROM subscription_requests${srCondition}`,
-      srParams
-    );
     stats.totalSubscribeRequests = totalRequests;
-
-    const [[{ newRequests }]] = await db.query(
-      `SELECT COUNT(*) AS newRequests FROM subscription_requests${srCondition} ${
-        srCondition ? "AND" : "WHERE"
-      } sr_status = 1`,
-      srParams
-    );
     stats.newSubscribeRequests = newRequests;
 
-    // الرسم البياني للزيارات (visits)
-    const visitCondition = clientId
-      ? "AND vs_us_link_code = (SELECT us_link_code FROM us_users WHERE us_client_id = ? LIMIT 1)"
-      : "";
-    const visitParams = clientId ? [clientId] : [];
+    // ✅ الرسم البياني: حسب clientId إن وُجد
+    const clientId = req.query.clientId;
 
-    const [visitRows] = await db.query(
-      `
-      SELECT DATE(vs_visit_time) AS date, COUNT(*) AS count
-      FROM visits
-      WHERE vs_visit_time >= DATE_SUB(CURDATE(), INTERVAL 6 DAY)
-      ${visitCondition}
-      GROUP BY DATE(vs_visit_time)
-      ORDER BY DATE(vs_visit_time)
+    let visitRows = [];
+
+    if (clientId) {
+      const [rows] = await db.query(
+        `
+        SELECT DATE(vs_visit_time) AS date, COUNT(*) AS count
+        FROM visits
+        WHERE vs_us_link_code = (
+          SELECT us_link_code FROM us_users WHERE us_client_id = ? LIMIT 1
+        ) AND vs_visit_time >= DATE_SUB(CURDATE(), INTERVAL 6 DAY)
+        GROUP BY DATE(vs_visit_time)
+        ORDER BY DATE(vs_visit_time)
       `,
-      visitParams
-    );
+        [clientId]
+      );
+
+      visitRows = rows;
+    }
 
     const daysMap = [
       "الأحد",
@@ -114,10 +98,10 @@ exports.getStats = async (req, res) => {
       date.setDate(today.getDate() - i);
       const dateStr = date.toISOString().split("T")[0];
 
-      const found = visitRows.find((row) => row.date === dateStr);
+      const match = visitRows.find((row) => row.date === dateStr);
 
-      stats.visitsPerDay.days.push(daysMap[date.getDay()]);
-      stats.visitsPerDay.counts.push(found ? found.count : 0);
+      stats.clientsPerDay.days.push(daysMap[date.getDay()]);
+      stats.clientsPerDay.counts.push(match ? match.count : 0);
     }
 
     return res.json(stats);
