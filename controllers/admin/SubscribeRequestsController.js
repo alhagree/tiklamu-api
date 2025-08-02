@@ -1,7 +1,17 @@
 // backend/controllers/admin/SubscribeRequestsController.js
 const db = require("../../shared/db");
 
+exports.getAll = async (req, res) => {
+  try {
+    const [results] = await db.query("SELECT 1 + 1 AS result");
+    res.json(results);
+  } catch (err) {
+    res.status(500).json({ error: err.message || err });
+  }
+};
+
 // جلب جميع الطلبات
+/*
 exports.getAll = async (req, res) => {
   try {
     const [results] = await db.query(
@@ -12,6 +22,7 @@ exports.getAll = async (req, res) => {
     res.status(500).json({ error: err });
   }
 };
+/************************************* */
 
 // تحديث الحالة
 exports.updateStatus = async (req, res) => {
