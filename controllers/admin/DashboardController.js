@@ -1,5 +1,7 @@
 const db = require("../../shared/db");
 
+const db = require("../../shared/db");
+
 exports.getStats = async (req, res) => {
   try {
     const stats = {
@@ -18,7 +20,7 @@ exports.getStats = async (req, res) => {
       },
     };
 
-    // بطاقات الويدجت (إحصائيات عامة)
+    // إحصائيات البطاقات
     const [[{ total }]] = await db.query(
       "SELECT COUNT(*) AS total FROM clients"
     );
@@ -28,7 +30,6 @@ exports.getStats = async (req, res) => {
     const [[{ inactive }]] = await db.query(
       "SELECT COUNT(*) AS inactive FROM clients WHERE cl_status = 0"
     );
-
     const [[{ subs }]] = await db.query(
       "SELECT COUNT(*) AS subs FROM subscriptions WHERE su_end_date > NOW()"
     );
@@ -41,7 +42,6 @@ exports.getStats = async (req, res) => {
     const [[{ renew }]] = await db.query(
       "SELECT COUNT(*) AS renew FROM subscriptions WHERE su_type = 'renew'"
     );
-
     const [[{ totalRequests }]] = await db.query(
       "SELECT COUNT(*) AS totalRequests FROM subscription_requests"
     );
@@ -49,7 +49,6 @@ exports.getStats = async (req, res) => {
       "SELECT COUNT(*) AS newRequests FROM subscription_requests WHERE sr_status = 1"
     );
 
-    // تخزين القيم
     stats.totalClients = total;
     stats.activeClients = active;
     stats.inactiveClients = inactive;
@@ -60,74 +59,9 @@ exports.getStats = async (req, res) => {
     stats.totalSubscribeRequests = totalRequests;
     stats.newSubscribeRequests = newRequests;
 
-    // ✅ الرسم البياني: حسب clientId إن وُجد
+    // 🔁 جلب بيانات الرسم البياني من الدالة
     const clientId = req.query.clientId;
-    let visitRows = [];
-
-    if (clientId && clientId.trim() !== "") {
-      // جلب link_code الخاص بالعميل
-      const [[user]] = await db.query(
-        `SELECT us_link_code FROM us_users WHERE us_client_id = ? LIMIT 1`,
-        [clientId]
-      );
-
-      if (user && user.us_link_code) {
-        const [rows] = await db.query(
-          `
-      SELECT 
-        DATE(DATE_ADD(vs_visit_time, INTERVAL 3 HOUR)) AS visit_date, 
-        COUNT(*) AS count
-      FROM visits
-      WHERE vs_us_link_code = ?
-        AND vs_visit_time >= DATE_SUB(CURDATE(), INTERVAL 6 DAY)
-      GROUP BY visit_date
-      ORDER BY visit_date
-      `,
-          [user.us_link_code]
-        );
-        visitRows = rows;
-      }
-    } else {
-      // ⚠️ كل العملاء
-      const [rows] = await db.query(
-        `
-    SELECT 
-      DATE(DATE_ADD(vs_visit_time, INTERVAL 3 HOUR)) AS visit_date, 
-      COUNT(*) AS count
-    FROM visits
-    WHERE vs_visit_time >= DATE_SUB(CURDATE(), INTERVAL 6 DAY)
-    GROUP BY visit_date
-    ORDER BY visit_date
-    `
-      );
-      visitRows = rows;
-    }
-
-    // 🔁 تنسيق الأيام السبعة الماضية
-    const daysMap = [
-      "الأحد",
-      "الاثنين",
-      "الثلاثاء",
-      "الأربعاء",
-      "الخميس",
-      "الجمعة",
-      "السبت",
-    ];
-    const today = new Date();
-
-    for (let i = 6; i >= 0; i--) {
-      const date = new Date();
-      date.setDate(today.getDate() - i);
-      const dateStr = date.toISOString().split("T")[0];
-
-      const match = visitRows.find((row) => {
-        const rowDate = new Date(row.visit_date).toISOString().split("T")[0];
-        return rowDate === dateStr;
-      });
-
-      stats.visitsPerDay.days.push(daysMap[date.getDay()]);
-      stats.visitsPerDay.counts.push(match ? match.count : 0);
-    }
+    stats.visitsPerDay = await getVisitsPerDay(clientId);
 
     return res.json(stats);
   } catch (err) {
@@ -135,3 +69,78 @@ exports.getStats = async (req, res) => {
     return res.status(500).json({ error: "خطأ في الخادم" });
   }
 };
+
+// دالة مساعدة لجلب عدد الزيارات لكل يوم
+async function getVisitsPerDay(clientId) {
+  const db = require("../../shared/db");
+
+  let visitRows = [];
+
+  if (clientId && clientId.trim() !== "") {
+    const [[user]] = await db.query(
+      `SELECT us_link_code FROM us_users WHERE us_client_id = ? LIMIT 1`,
+      [clientId]
+    );
+
+    if (user && user.us_link_code) {
+      const [rows] = await db.query(
+        `
+        SELECT 
+          DATE(DATE_ADD(vs_visit_time, INTERVAL 3 HOUR)) AS visit_date, 
+          COUNT(*) AS count
+        FROM visits
+        WHERE vs_us_link_code = ?
+          AND vs_visit_time >= DATE_SUB(CURDATE(), INTERVAL 6 DAY)
+        GROUP BY visit_date
+        ORDER BY visit_date
+        `,
+        [user.us_link_code]
+      );
+      visitRows = rows;
+    }
+  } else {
+    const [rows] = await db.query(
+      `
+      SELECT 
+        DATE(DATE_ADD(vs_visit_time, INTERVAL 3 HOUR)) AS visit_date, 
+        COUNT(*) AS count
+      FROM visits
+      WHERE vs_visit_time >= DATE_SUB(CURDATE(), INTERVAL 6 DAY)
+      GROUP BY visit_date
+      ORDER BY visit_date
+      `
+    );
+    visitRows = rows;
+  }
+
+  // تجهيز البيانات للأيام السبعة الماضية
+  const daysMap = [
+    "الأحد",
+    "الاثنين",
+    "الثلاثاء",
+    "الأربعاء",
+    "الخميس",
+    "الجمعة",
+    "السبت",
+  ];
+  const today = new Date();
+
+  const days = [];
+  const counts = [];
+
+  for (let i = 6; i >= 0; i--) {
+    const date = new Date();
+    date.setDate(today.getDate() - i);
+    const dateStr = date.toISOString().split("T")[0];
+
+    const match = visitRows.find((row) => {
+      const rowDate = new Date(row.visit_date).toISOString().split("T")[0];
+      return rowDate === dateStr;
+    });
+
+    days.push(daysMap[date.getDay()]);
+    counts.push(match ? match.count : 0);
+  }
+
+  return { days, counts };
+}
