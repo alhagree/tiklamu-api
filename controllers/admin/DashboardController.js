@@ -62,32 +62,48 @@ exports.getStats = async (req, res) => {
 
     // ✅ الرسم البياني: حسب clientId إن وُجد
     const clientId = req.query.clientId;
-
     let visitRows = [];
 
-    if (clientId) {
-      const [rows] = await db.query(
-        `
-  SELECT 
-    DATE(DATE_ADD(vs_visit_time, INTERVAL 3 HOUR)) AS visit_date, 
-    COUNT(*) AS count
-  FROM visits
-  WHERE vs_us_link_code COLLATE utf8mb4_general_ci = (
-    SELECT us_link_code COLLATE utf8mb4_general_ci 
-    FROM us_users 
-    WHERE us_client_id = ? 
-    LIMIT 1
-  )
-  AND vs_visit_time >= DATE_SUB(CURDATE(), INTERVAL 6 DAY)
-  GROUP BY visit_date
-  ORDER BY visit_date
-  `,
+    if (clientId && clientId.trim() !== "") {
+      // جلب link_code الخاص بالعميل
+      const [[user]] = await db.query(
+        `SELECT us_link_code FROM us_users WHERE us_client_id = ? LIMIT 1`,
         [clientId]
       );
 
+      if (user && user.us_link_code) {
+        const [rows] = await db.query(
+          `
+      SELECT 
+        DATE(DATE_ADD(vs_visit_time, INTERVAL 3 HOUR)) AS visit_date, 
+        COUNT(*) AS count
+      FROM visits
+      WHERE vs_us_link_code = ?
+        AND vs_visit_time >= DATE_SUB(CURDATE(), INTERVAL 6 DAY)
+      GROUP BY visit_date
+      ORDER BY visit_date
+      `,
+          [user.us_link_code]
+        );
+        visitRows = rows;
+      }
+    } else {
+      // ⚠️ كل العملاء
+      const [rows] = await db.query(
+        `
+    SELECT 
+      DATE(DATE_ADD(vs_visit_time, INTERVAL 3 HOUR)) AS visit_date, 
+      COUNT(*) AS count
+    FROM visits
+    WHERE vs_visit_time >= DATE_SUB(CURDATE(), INTERVAL 6 DAY)
+    GROUP BY visit_date
+    ORDER BY visit_date
+    `
+      );
       visitRows = rows;
     }
 
+    // 🔁 تنسيق الأيام السبعة الماضية
     const daysMap = [
       "الأحد",
       "الاثنين",
@@ -104,7 +120,10 @@ exports.getStats = async (req, res) => {
       date.setDate(today.getDate() - i);
       const dateStr = date.toISOString().split("T")[0];
 
-      const match = visitRows.find((row) => row.visit_date === dateStr);
+      const match = visitRows.find((row) => {
+        const rowDate = new Date(row.visit_date).toISOString().split("T")[0];
+        return rowDate === dateStr;
+      });
 
       stats.visitsPerDay.days.push(daysMap[date.getDay()]);
       stats.visitsPerDay.counts.push(match ? match.count : 0);
